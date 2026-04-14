@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-console.a "CMakeFiles/rmm-lib-console.dir/src/console.c.o"
+/usr/bin/ranlib librmm-lib-console.a

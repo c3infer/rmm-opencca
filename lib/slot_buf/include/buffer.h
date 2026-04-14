@@ -38,6 +38,10 @@ enum buffer_slot {
 	NR_CPU_SLOTS = U(SLOT_EL3_TOKEN_SIGN_AUX0) + MAX_REC_AUX_GRANULES
 };
 
+#ifndef SLOT_RD2
+#define SLOT_RD2 SLOT_RD
+#endif
+
 bool check_cpu_slots_empty(void);
 void *buffer_granule_map(struct granule *g, enum buffer_slot slot);
 void buffer_unmap(void *buf);

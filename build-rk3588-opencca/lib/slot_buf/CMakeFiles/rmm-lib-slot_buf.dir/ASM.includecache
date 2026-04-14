@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/asm_macros.S
+
+/home/amir/mica/staging/rmm-private-opencca/lib/slot_buf/src/aarch64/ns_access.S
+asm_macros.S
+-
+

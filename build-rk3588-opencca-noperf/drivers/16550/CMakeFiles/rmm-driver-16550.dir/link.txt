@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar cr librmm-driver-16550.a "CMakeFiles/rmm-driver-16550.dir/src/16550_console.S.obj" 
+/usr/bin/aarch64-linux-gnu-ranlib librmm-driver-16550.a

@@ -1,0 +1,29 @@
+runtime/CMakeFiles/rmm-runtime.dir/rsi/logger.c.obj: \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/rsi/logger.c \
+ /usr/aarch64-linux-gnu/include/assert.h \
+ /usr/aarch64-linux-gnu/include/features.h \
+ /usr/aarch64-linux-gnu/include/features-time64.h \
+ /usr/aarch64-linux-gnu/include/bits/wordsize.h \
+ /usr/aarch64-linux-gnu/include/bits/timesize.h \
+ /usr/aarch64-linux-gnu/include/stdc-predef.h \
+ /usr/aarch64-linux-gnu/include/sys/cdefs.h \
+ /usr/aarch64-linux-gnu/include/bits/long-double.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs-lp64.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/debug/include/debug.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdarg.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdio.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint-gcc.h \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/include/psci.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/status.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc-rmi.h \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/include/rsi-logger.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc-rsi.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/string.h \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/include/rmi_rsi_count.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/spinlock.h

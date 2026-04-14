@@ -9,7 +9,7 @@
 #ifndef __ASSEMBLER__
 
 #include <arch.h>
-#include <attestation_token.h>
+#include <attest_app.h>
 #include <gic.h>
 #include <memory_alloc.h>
 #include <pauth.h>
@@ -20,14 +20,14 @@
 #include <sizes.h>
 #include <smc-rmi.h>
 #include <utils_def.h>
+#include <policy_parser.h>
 
 #ifndef CBMC
 #define RMM_REC_SAVED_GEN_REG_COUNT	U(31)
 #define STRUCT_TYPE			struct
 #define REG_TYPE			unsigned long
-#define RMM_REALM_TOKEN_BUF_SIZE	SZ_1K
 
-/* MbedTLS needs 8K of heap for attestation usecases */
+/* Number of pages per REC for attestation heap */
 #define REC_HEAP_PAGES			2U
 #define REC_HEAP_SIZE			(REC_HEAP_PAGES * SZ_4K)
 
@@ -50,9 +50,6 @@
 /* Number of pages per REC for 'rec_attest_data' structure */
 #define REC_ATTEST_PAGES		1U
 #define REC_ATTEST_SIZE			(REC_ATTEST_PAGES * SZ_4K)
-
-/* Number of pages per REC for attestation buffer */
-#define REC_ATTEST_TOKEN_BUF_SIZE	(RMM_CCA_TOKEN_BUFFER * SZ_4K)
 
 /* Number of pages per REC to be allocated */
 #define REC_NUM_PAGES		(REC_HEAP_PAGES	  + \
@@ -80,13 +77,12 @@
 #define STRUCT_TYPE	                union
 /* Reserve a single byte per saved register instead of 8. */
 #define REG_TYPE			unsigned char
-#define RMM_REALM_TOKEN_BUF_SIZE	4U
-
-#define REC_HEAP_PAGES		2U
-#define REC_HEAP_SIZE		(REC_HEAP_PAGES * SZ_4K)
 
 #define REC_PMU_PAGES		0U
 #define REC_PMU_SIZE		(REC_PMU_PAGES * SZ_4K)
+
+#define REC_HEAP_PAGES		0U
+#define REC_HEAP_SIZE		(REC_HEAP_PAGES * SZ_4K)
 
 #define REC_SIMD_PAGES		0U
 #define REC_SIMD_SIZE		(REC_SIMD_PAGES * SZ_4K)
@@ -108,11 +104,11 @@ STRUCT_TYPE sysreg_state {
 	unsigned long sp_el1;
 	unsigned long elr_el1;
 	unsigned long spsr_el1;
-	unsigned long pmcr_el0;
 	unsigned long tpidrro_el0;
 	unsigned long tpidr_el0;
 	unsigned long csselr_el1;
 	unsigned long sctlr_el1;
+	unsigned long sctlr2_el1;
 	unsigned long actlr_el1;
 	unsigned long cpacr_el1;
 	unsigned long zcr_el1;
@@ -133,7 +129,8 @@ STRUCT_TYPE sysreg_state {
 	unsigned long mdscr_el1;
 	unsigned long mdccint_el1;
 	unsigned long disr_el1;
-	unsigned long mpam0_el1;
+	unsigned long brbcr_el1;
+	unsigned long pmcr_el0;
 
 	/* Timer Registers */
 	unsigned long cnthctl_el2;
@@ -179,11 +176,17 @@ struct ns_state {
 	struct pmu_state pmu;
 } __aligned(CACHE_WRITEBACK_GRANULE);
 
+enum group_attest_phase {
+	GROUP_PHASE_TOKEN = 0U,
+	GROUP_PHASE_CFG   = 1U,
+	GROUP_PHASE_DONE  = 2U,
+};
+
+
 /*
  * Data used when handling attestation requests
  */
 struct rec_attest_data {
-	unsigned char rmm_realm_token_buf[RMM_REALM_TOKEN_BUF_SIZE];
 	size_t rmm_realm_token_len;
 
 	/* Number of CCA token bytes copied to the Realm */
@@ -192,7 +195,22 @@ struct rec_attest_data {
 	/* Number of CCA token bytes left to copy to the Realm */
 	size_t rmm_cca_token_len;
 
-	struct token_sign_cntxt token_sign_ctx;
+	/* -------- group attestation extra state -------- */
+
+	/* What are we currently streaming: token, cfg, or done? */
+	enum group_attest_phase group_phase;
+
+	/* Bytes copied so far from the current cfg (within a single PD) */
+	size_t group_cfg_copied_len;
+
+	/* Index of the cfg (RD) we are currently streaming */
+	unsigned int group_cfg_index;
+
+	/* Total number of cfgs (RDs) in the group */
+	unsigned int group_cfg_num;
+
+	/* PD addresses for each cfg (one per RD in the group) */
+	unsigned long group_cfg_pd_addrs[PARSER_MAX_VMS];
 
 	/* Buffer allocation info used for heap init and management */
 	struct buffer_alloc_ctx alloc_ctx;
@@ -220,7 +238,7 @@ struct rec_aux_data {
 	uintptr_t cca_token_buf;
 };
 
-struct rec {
+struct rec { /* NOLINT: Suppressing optin.performance.Padding as fields are in logical order */
 	struct granule *g_rec;	/* the granule in which this REC lives */
 	unsigned long rec_idx;	/* which REC is this */
 	bool runnable;
@@ -303,6 +321,8 @@ struct rec {
 
 	/* True if host call is pending */
 	bool host_call;
+
+	struct app_data_cfg attest_app_data;
 
 	/* The active SIMD context that is live in CPU registers */
 	struct simd_context *active_simd_ctx;

@@ -24,6 +24,18 @@ unsigned long smc_data_create_unknown(unsigned long rd_addr,
 				      unsigned long data_addr,
 				      unsigned long map_addr);
 
+unsigned long smc_data_create_unknown_shared(unsigned long rd_addr,
+				      unsigned long data_addr,
+				      unsigned long map_addr);
+
+unsigned long smc_realm_set_protected_shared_range(unsigned long rd_addr, 
+			unsigned long ipa,
+			unsigned long size);
+
+unsigned long smc_realm_bind_protected_shared(unsigned long rd_addr,
+			unsigned long pa,
+			unsigned long ipa);
+
 void smc_data_destroy(unsigned long rd_addr,
 		      unsigned long map_addr,
 		      struct smc_result *res);
@@ -36,6 +48,14 @@ unsigned long smc_realm_activate(unsigned long rd_addr);
 
 unsigned long smc_realm_create(unsigned long rd_addr,
 				unsigned long realm_params_addr);
+
+unsigned long smc_realm_pd(unsigned long rd_addr,
+				unsigned long pd_addr);
+
+unsigned long smc_realm_dummy_page(unsigned long rd_addr,
+				   unsigned long dummy_pa);
+
+unsigned long smc_sgt(unsigned long sgt);
 
 unsigned long smc_realm_destroy(unsigned long rd_addr);
 
@@ -94,6 +114,16 @@ void smc_rtt_set_ripas(unsigned long rd_addr,
 			unsigned long rec_addr,
 			unsigned long base,
 			unsigned long top,
+			struct smc_result *res);
+
+unsigned long smc_dev_mem_map(unsigned long rd_addr,
+				unsigned long map_addr,
+				unsigned long ulevel,
+				unsigned long dev_mem_addr);
+
+void smc_dev_mem_unmap(unsigned long rd_addr,
+			unsigned long map_addr,
+			unsigned long ulevel,
 			struct smc_result *res);
 
 #endif /* SMC_HANDLER_H */

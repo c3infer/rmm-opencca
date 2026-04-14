@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-driver-pl011.a "CMakeFiles/rmm-driver-pl011.dir/src/pl011.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-driver-pl011.a

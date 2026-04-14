@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-plat-host_build.a "CMakeFiles/rmm-plat-host_build.dir/src/host_setup.c.o" "CMakeFiles/rmm-plat-host_build.dir/src/host_harness.c.o"
+/usr/bin/ranlib librmm-plat-host_build.a

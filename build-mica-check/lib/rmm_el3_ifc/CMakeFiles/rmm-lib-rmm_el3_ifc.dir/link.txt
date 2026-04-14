@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-rmm_el3_ifc.a "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_ifc.c.o" "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_ifc_manifest.c.o" "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_runtime.c.o"
+/usr/bin/ranlib librmm-lib-rmm_el3_ifc.a

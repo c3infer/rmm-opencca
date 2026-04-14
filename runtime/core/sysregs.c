@@ -9,10 +9,10 @@
 #include <arch_helpers.h>
 #include <debug.h>
 #include <esr.h>
+#include <memory_alloc.h>
+#include <opencca.h>
 #include <rec.h>
 #include <smc-rmi.h>
-#include <sysreg_traps.h>
-#include <opencca.h>
 
 #define SYSREG_CASE(reg) \
 	case ESR_EL2_SYSREG_##ID_AA64##reg##_EL1:
@@ -35,8 +35,14 @@
  * ID_AA64DFR0_EL1:
  *
  * Cleared fields:
+ * - Debug architecture version:
+ *   set in ID_AA64DFR0_EL1_SET
  * - Trace unit System registers not implemented
+ * - Number of breakpoints:
+ *   set in ID_AA64DFR0_EL1_SET
  * - PMU Snapshot extension not implemented
+ * - Number of watchpoints:
+ *   set in ID_AA64DFR0_EL1_SET
  * - Synchronous-exception-based event profiling not implemented
  * - Number of breakpoints that are context-aware
  * - Statistical Profiling Extension not implemented
@@ -46,8 +52,11 @@
  * - Trace Buffer External Mode not implemented
  */
 #define ID_AA64DFR0_EL1_CLEAR			  \
+	MASK(ID_AA64DFR0_EL1_DebugVer)		| \
 	MASK(ID_AA64DFR0_EL1_TraceVer)		| \
+	MASK(ID_AA64DFR0_EL1_BRPs)		| \
 	MASK(ID_AA64DFR0_EL1_PMSS)		| \
+	MASK(ID_AA64DFR0_EL1_WRPs)		| \
 	MASK(ID_AA64DFR0_EL1_SEBEP)		| \
 	MASK(ID_AA64DFR0_EL1_CTX_CMPS)		| \
 	MASK(ID_AA64DFR0_EL1_PMSVer)		| \
@@ -55,6 +64,17 @@
 	MASK(ID_AA64DFR0_EL1_TraceBuffer)	| \
 	MASK(ID_AA64DFR0_EL1_BRBE)		| \
 	MASK(ID_AA64DFR0_EL1_ExtTrcBuff)
+
+/*
+ * Set fields:
+ * - Armv8 debug architecture
+ * - Number of breakpoints: 2
+ * - Number of watchpoints: 2
+ */
+#define ID_AA64DFR0_EL1_SET						  \
+	INPLACE(ID_AA64DFR0_EL1_DebugVer, ID_AA64DFR0_EL1_Debugv8)	| \
+	INPLACE(ID_AA64DFR0_EL1_BRPs, 1UL)				| \
+	INPLACE(ID_AA64DFR0_EL1_WRPs, 1UL)
 
 /*
  * ID_AA64DFR1_EL1:
@@ -127,7 +147,7 @@ static bool handle_id_sysreg_trap(struct rec *rec,
 		value = SYSREG_READ(AFR1);
 		break;
 	SYSREG_CASE(DFR0)
-		value = SYSREG_READ_CLEAR(DFR0);
+		value = SYSREG_READ_CLEAR_SET(DFR0);
 		break;
 	SYSREG_CASE(DFR1)
 		value = SYSREG_READ_CLEAR(DFR1);
@@ -231,41 +251,24 @@ struct sysreg_handler {
 	{ .esr_mask = (_mask), .esr_value = (_value), .fn = (_handler_fn) }
 
 static const struct sysreg_handler sysreg_handlers[] = {
-	SYSREG_HANDLER(ESR_EL2_SYSREG_ID_MASK, ESR_EL2_SYSREG_ID,
-		       handle_id_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_ICC_EL1_MASK, ESR_EL2_SYSREG_ICC_EL1,
-		       handle_icc_el1_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_ICC_PMR_EL1,
-		       handle_icc_el1_sysreg_trap),
-
+	SYSREG_HANDLER(ESR_EL2_SYSREG_ID_MASK, ESR_EL2_SYSREG_ID, handle_id_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_ICC_EL1_MASK, ESR_EL2_SYSREG_ICC_EL1, handle_icc_el1_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_ICC_PMR_EL1, handle_icc_el1_sysreg_trap),
 #ifdef ENABLE_OPENCCA
-	/* Opencca TVM FWB trap mask */
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_SCTLR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_TTBR0_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_TTBR1_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_TCR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_TCR2_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_AFSR0_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_AFSR1_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_ESR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_FAR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_MAIR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_AMAIR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap),
-	SYSREG_HANDLER(ESR_EL2_SYSREG_HCR_TVM_MASK, ESR_EL2_SYSREG_CONTEXTIDR_EL1,
-						opencca_handle_esr_tvm_sysreg_trap)
+	/* OpenCCA TVM/FWB trap handling for EL1 MMU/cache control sysregs. */
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_SCTLR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_TTBR0_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_TTBR1_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_TCR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_TCR2_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_AFSR0_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_AFSR1_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_ESR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_FAR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_MAIR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_AMAIR_EL1, opencca_handle_esr_tvm_sysreg_trap),
+	SYSREG_HANDLER(ESR_EL2_SYSREG_MASK, ESR_EL2_SYSREG_CONTEXTIDR_EL1, opencca_handle_esr_tvm_sysreg_trap)
 #endif
-
 };
 
 static unsigned long get_sysreg_write_value(struct rec *rec, unsigned long esr)
@@ -281,8 +284,7 @@ static unsigned long get_sysreg_write_value(struct rec *rec, unsigned long esr)
 	return rec->regs[rt];
 }
 
-static void emulate_sysreg_access_ns(struct rec *rec,
-				     struct rmi_rec_exit *rec_exit,
+static void emulate_sysreg_access_ns(struct rec *rec, struct rmi_rec_exit *rec_exit,
 				     unsigned long esr)
 {
 	if (ESR_EL2_SYSREG_IS_WRITE(esr)) {
@@ -309,7 +311,6 @@ bool handle_sysreg_access_trap(struct rec *rec, struct rmi_rec_exit *rec_exit,
 	/* Check for 32-bit instruction trapped */
 	assert(ESR_IL(esr) != 0UL);
 
-	/* cppcheck-suppress misra-c2012-14.2 */
 	for (unsigned int i = 0U; i < ARRAY_SIZE(sysreg_handlers); i++) {
 		const struct sysreg_handler *handler = &sysreg_handlers[i];
 

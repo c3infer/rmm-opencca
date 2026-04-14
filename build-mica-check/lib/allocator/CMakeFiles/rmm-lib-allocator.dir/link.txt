@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-allocator.a "CMakeFiles/rmm-lib-allocator.dir/src/memory_alloc.c.o"
+/usr/bin/ranlib librmm-lib-allocator.a

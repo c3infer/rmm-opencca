@@ -13,6 +13,7 @@
 #include <smc-rmi.h>
 #include <smc-rsi.h>
 
+
 #ifdef NDEBUG
 #define RMM_BUILD_TYPE	"release"
 #else
@@ -36,7 +37,6 @@ static void rmm_arch_init(void)
 			EXTRACT(PMCR_EL0_N, read_pmcr_el0())));
 }
 
-/* coverity[misra_c_2012_rule_8_4_violation:SUPPRESS] */
 /* coverity[misra_c_2012_rule_8_7_violation:SUPPRESS] */
 void rmm_warmboot_main(void)
 {
@@ -51,12 +51,6 @@ void rmm_warmboot_main(void)
 	slot_buf_finish_warmboot_init();
 }
 
-/*
- * This function is called from rmm_entry() in head.S
- * and should be defined with external linkage, no
- * compatible declaration is required.
- */
-/* coverity[misra_c_2012_rule_8_4_violation:SUPPRESS] */
 /* coverity[misra_c_2012_rule_8_7_violation:SUPPRESS] */
 void rmm_main(void)
 {
@@ -90,8 +84,8 @@ void rmm_main(void)
 
 	/* Report RMI/RSI ABI versions and build timestamp */
 	NOTICE("RMI/RSI ABI v.%lu.%lu/%lu.%lu built: %s %s\n",
-		RMI_ABI_VERSION_MAJOR, RMI_ABI_VERSION_MINOR,
-		RSI_ABI_VERSION_MAJOR, RSI_ABI_VERSION_MINOR,
+		RMI_ABI_VERSION_GET_MAJOR(rmi_get_highest_supported_version()), RMI_ABI_VERSION_GET_MINOR(rmi_get_highest_supported_version()),
+		RSI_ABI_VERSION_GET_MAJOR(rsi_get_highest_supported_version()), RSI_ABI_VERSION_GET_MINOR(rsi_get_highest_supported_version()),
 		__DATE__, __TIME__);
 
 	rmm_warmboot_main();

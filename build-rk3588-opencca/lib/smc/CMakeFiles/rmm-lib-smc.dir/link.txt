@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-smc.a "CMakeFiles/rmm-lib-smc.dir/src/aarch64/smc.S.obj" "CMakeFiles/rmm-lib-smc.dir/src/smc-rmi-offsets.c.obj" "CMakeFiles/rmm-lib-smc.dir/src/smc-rsi-offsets.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-smc.a

@@ -18,6 +18,7 @@
 #include <smc-rmi.h>
 #include <smc-rsi.h>
 #include <smc.h>
+#include <string.h>
 
 static void reset_last_run_info(struct rec *rec)
 {
@@ -168,6 +169,168 @@ static bool complete_host_call(struct rec *rec, struct rmi_rec_run *rec_run)
 	rec->host_call = false;
 	return true;
 }
+
+static inline void print_rmi_rec_exit_irq_slim(const struct rmi_rec_exit *e)
+{
+	/* Only care about interrupt exits */
+	if (e->exit_reason != RMI_EXIT_IRQ && e->exit_reason != RMI_EXIT_FIQ)
+		return;
+
+	/* CNT{P,V}_CTL_EL0 bits */
+	const unsigned long EN   = 1UL << 0;
+	const unsigned long MSK  = 1UL << 1;
+	const unsigned long PEND = 1UL << 2;
+
+	const unsigned long vctl = e->cntv_ctl, pctl = e->cntp_ctl;
+	const bool v_pend = (vctl & EN) && !(vctl & MSK) && (vctl & PEND);
+	const bool p_pend = (pctl & EN) && !(pctl & MSK) && (pctl & PEND);
+
+	const char *kind = (e->exit_reason == RMI_EXIT_FIQ) ? "FIQ" : "IRQ";
+	const char *why  = v_pend ? "virt-timer" :
+	                   p_pend ? "phys-timer" :
+	                   e->gicv3_misr ? "gic-misr" : "other";
+
+	INFO("rec_exit %s %s cntv_ctl=0x%lx cntv_cval=0x%lx cntp_ctl=0x%lx cntp_cval=0x%lx%s%lx\n",
+	     kind, why,
+	     vctl, (unsigned long)e->cntv_cval,
+	     pctl, (unsigned long)e->cntp_cval,
+	     e->gicv3_misr ? " misr=0x" : "",
+	     (unsigned long)e->gicv3_misr);
+}
+
+
+static inline void print_rmi_rec_exit(const struct rmi_rec_exit *e)
+{
+	INFO("rmi_rec_exit{"
+		"%s%.*lx" /* exit_reason */
+		"%s%.*lx" /* flags */
+		"%s%.*lx" /* esr */
+		"%s%.*lx" /* far */
+		"%s%.*lx" /* hpfar */
+
+		/* Common GPRs (extend if you want x0..x30) */
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+
+		/* GIC + a few LRs (extend if you want all) */
+		"%s%.*lx" /* gicv3_hcr */
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+		"%s%.*lx" /* gicv3_misr */
+		"%s%.*lx" /* gicv3_vmcr */
+
+		/* Timers */
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+
+		/* RIPAS / S2AP / vdev */
+		"%s%.*lx""%s%.*lx""%s%.*x""%s%.*lx"
+		"%s%.*lx""%s%.*lx""%s%.*lx"
+
+		/* Host call / plane / device comm */
+		"%s%.*x""%s%.*lx""%s%.*lx""%s%.*x"
+
+		/* PMU */
+		"%s%.*lx"
+		" }\n",
+
+		e->exit_reason ? " exit_reason=0x" : "", 0, (unsigned long)e->exit_reason,
+		e->flags       ? " flags=0x"       : "", 0, (unsigned long)e->flags,
+		e->esr         ? " esr=0x"         : "", 0, (unsigned long)e->esr,
+		e->far         ? " far=0x"         : "", 0, (unsigned long)e->far,
+		e->hpfar       ? " hpfar=0x"       : "", 0, (unsigned long)e->hpfar,
+
+		e->gprs[0] ? " x0=0x" : "", 0, (unsigned long)e->gprs[0],
+		e->gprs[1] ? " x1=0x" : "", 0, (unsigned long)e->gprs[1],
+		e->gprs[2] ? " x2=0x" : "", 0, (unsigned long)e->gprs[2],
+		e->gprs[3] ? " x3=0x" : "", 0, (unsigned long)e->gprs[3],
+		e->gprs[4] ? " x4=0x" : "", 0, (unsigned long)e->gprs[4],
+		e->gprs[5] ? " x5=0x" : "", 0, (unsigned long)e->gprs[5],
+		e->gprs[6] ? " x6=0x" : "", 0, (unsigned long)e->gprs[6],
+		e->gprs[7] ? " x7=0x" : "", 0, (unsigned long)e->gprs[7],
+
+		e->gicv3_hcr    ? " gicv3_hcr=0x" : "", 0, (unsigned long)e->gicv3_hcr,
+		e->gicv3_lrs[0] ? " lr0=0x"       : "", 0, (unsigned long)e->gicv3_lrs[0],
+		e->gicv3_lrs[1] ? " lr1=0x"       : "", 0, (unsigned long)e->gicv3_lrs[1],
+		e->gicv3_lrs[2] ? " lr2=0x"       : "", 0, (unsigned long)e->gicv3_lrs[2],
+		e->gicv3_lrs[3] ? " lr3=0x"       : "", 0, (unsigned long)e->gicv3_lrs[3],
+		e->gicv3_misr   ? " gicv3_misr=0x": "", 0, (unsigned long)e->gicv3_misr,
+		e->gicv3_vmcr   ? " gicv3_vmcr=0x": "", 0, (unsigned long)e->gicv3_vmcr,
+
+		e->cntp_ctl  ? " cntp_ctl=0x"  : "", 0, (unsigned long)e->cntp_ctl,
+		e->cntp_cval ? " cntp_cval=0x" : "", 0, (unsigned long)e->cntp_cval,
+		e->cntv_ctl  ? " cntv_ctl=0x"  : "", 0, (unsigned long)e->cntv_ctl,
+		e->cntv_cval ? " cntv_cval=0x" : "", 0, (unsigned long)e->cntv_cval,
+
+		e->ripas_base   ? " ripas_base=0x"   : "", 0, (unsigned long)e->ripas_base,
+		e->ripas_top    ? " ripas_top=0x"    : "", 0, (unsigned long)e->ripas_top,
+		e->ripas_value  ? " ripas_value=0x"  : "", 0, (unsigned int)e->ripas_value,
+		e->ripas_dev_pa ? " ripas_dev_pa=0x" : "", 0, (unsigned long)e->ripas_dev_pa,
+		e->s2ap_base    ? " s2ap_base=0x"    : "", 0, (unsigned long)e->s2ap_base,
+		e->s2ap_top     ? " s2ap_top=0x"     : "", 0, (unsigned long)e->s2ap_top,
+		e->vdev_id      ? " vdev_id=0x"      : "", 0, (unsigned long)e->vdev_id,
+
+		e->imm         ? " imm=0x"         : "", 0, (unsigned int)e->imm,
+		e->plane       ? " plane=0x"       : "", 0, (unsigned long)e->plane,
+		e->vdev        ? " vdev=0x"        : "", 0, (unsigned long)e->vdev,
+		e->vdev_action ? " vdev_action=0x" : "", 0, (unsigned int)e->vdev_action,
+
+		e->pmu_ovf_status ? " pmu_ovf_status=0x" : "", 0, (unsigned long)e->pmu_ovf_status
+	);
+}
+
+static inline void print_rmi_rec_enter(const struct rmi_rec_enter *e)
+{
+	INFO("rmi_rec_enter{"
+		"%s%.*lx" /* flags */
+
+		/* Common GPRs (extend if you want x0..x30) */
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+
+		/* GIC + a few LRs (extend if you want all) */
+		"%s%.*lx" /* gicv3_hcr */
+		"%s%.*lx""%s%.*lx""%s%.*lx""%s%.*lx"
+		" }\n",
+
+		e->flags    ? " flags=0x"    : "", 0, (unsigned long)e->flags,
+
+		e->gprs[0] ? " x0=0x" : "", 0, (unsigned long)e->gprs[0],
+		e->gprs[1] ? " x1=0x" : "", 0, (unsigned long)e->gprs[1],
+		e->gprs[2] ? " x2=0x" : "", 0, (unsigned long)e->gprs[2],
+		e->gprs[3] ? " x3=0x" : "", 0, (unsigned long)e->gprs[3],
+		e->gprs[4] ? " x4=0x" : "", 0, (unsigned long)e->gprs[4],
+		e->gprs[5] ? " x5=0x" : "", 0, (unsigned long)e->gprs[5],
+		e->gprs[6] ? " x6=0x" : "", 0, (unsigned long)e->gprs[6],
+		e->gprs[7] ? " x7=0x" : "", 0, (unsigned long)e->gprs[7],
+
+		e->gicv3_hcr    ? " gicv3_hcr=0x" : "", 0, (unsigned long)e->gicv3_hcr,
+		e->gicv3_lrs[0] ? " lr0=0x"       : "", 0, (unsigned long)e->gicv3_lrs[0],
+		e->gicv3_lrs[1] ? " lr1=0x"       : "", 0, (unsigned long)e->gicv3_lrs[1],
+		e->gicv3_lrs[2] ? " lr2=0x"       : "", 0, (unsigned long)e->gicv3_lrs[2],
+		e->gicv3_lrs[3] ? " lr3=0x"       : "", 0, (unsigned long)e->gicv3_lrs[3]
+	);
+}
+
+static inline void print_rmi_rec_enter_decoded(const struct rmi_rec_enter *e)
+{
+	unsigned int i;
+
+	for (i = 0; i < REC_GIC_NUM_LRS; i++) {
+		unsigned long lr = e->gicv3_lrs[i];
+		unsigned int vintid;
+		unsigned int state;
+
+		if (!lr)
+			continue;
+
+		vintid = (unsigned int)(lr & 0xffffffffu);      /* vINTID[31:0] */
+		state  = (unsigned int)((lr >> 62) & 0x3u);     /* State[63:62] */
+
+		INFO("rmi_rec_enter{ lr%u=0x%016lx vintid=%u state=%u }\n",
+		     i, lr, vintid, state);
+	}
+}
+
+
 
 unsigned long smc_rec_enter(unsigned long rec_addr,
 			    unsigned long rec_run_addr)
@@ -322,6 +485,8 @@ out_unmap_buffers:
 	buffer_unmap(rec);
 
 	if (ret == RMI_SUCCESS) {
+		// print_rmi_rec_exit(&rec_run.exit);
+		// print_rmi_rec_enter_decoded(&rec_run.enter);
 		if (!ns_buffer_write(
 			SLOT_NS, g_run,
 			(unsigned int)offsetof(struct rmi_rec_run, exit),

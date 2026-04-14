@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-allocator.a "CMakeFiles/rmm-lib-allocator.dir/src/memory_alloc.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-allocator.a

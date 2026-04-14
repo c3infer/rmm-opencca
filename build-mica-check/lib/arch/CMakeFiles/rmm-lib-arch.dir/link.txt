@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-arch.a "CMakeFiles/rmm-lib-arch.dir/src/vmid.c.o" "CMakeFiles/rmm-lib-arch.dir/src/arch_features.c.o" "CMakeFiles/rmm-lib-arch.dir/src/pmu.c.o" "CMakeFiles/rmm-lib-arch.dir/src/pauth.c.o" "CMakeFiles/rmm-lib-arch.dir/src/simd.c.o" "CMakeFiles/rmm-lib-arch.dir/src/fake_host/cache_wrappers.c.o" "CMakeFiles/rmm-lib-arch.dir/src/fake_host/instr_helpers.c.o" "CMakeFiles/rmm-lib-arch.dir/src/fake_host/simd_helpers.c.o"
+/usr/bin/ranlib librmm-lib-arch.a

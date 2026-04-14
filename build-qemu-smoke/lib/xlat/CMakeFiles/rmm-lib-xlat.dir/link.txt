@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-xlat.a "CMakeFiles/rmm-lib-xlat.dir/src/aarch64/enable_mmu.S.obj" "CMakeFiles/rmm-lib-xlat.dir/src/aarch64/xlat_helper.S.obj" "CMakeFiles/rmm-lib-xlat.dir/src/xlat_tables_core.c.obj" "CMakeFiles/rmm-lib-xlat.dir/src/xlat_tables_utils.c.obj" "CMakeFiles/rmm-lib-xlat.dir/src/xlat_tables_arch.c.obj" "CMakeFiles/rmm-lib-xlat.dir/src/xlat_contexts.c.obj" "CMakeFiles/rmm-lib-xlat.dir/src/xlat_high_va.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-xlat.a

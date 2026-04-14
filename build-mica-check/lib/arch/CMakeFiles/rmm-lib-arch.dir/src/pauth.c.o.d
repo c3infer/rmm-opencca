@@ -1,0 +1,32 @@
+lib/arch/CMakeFiles/rmm-lib-arch.dir/src/pauth.c.o: \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/src/pauth.c \
+ /usr/include/stdc-predef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/features.h /usr/include/features-time64.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/timesize.h \
+ /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/time64.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/opencca/include/opencca.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/fake_host/instr_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/fake_host/host_harness.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdbool.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/types.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/fake_host/cpuid.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/fake_host/entropy.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/pauth.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/src/fake_host/pauth_pvt.h

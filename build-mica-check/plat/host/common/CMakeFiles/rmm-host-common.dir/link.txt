@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-host-common.a "CMakeFiles/rmm-host-common.dir/src/host_console.c.o" "CMakeFiles/rmm-host-common.dir/src/host_harness_cmn.c.o" "CMakeFiles/rmm-host-common.dir/src/host_platform_api_cmn.c.o" "CMakeFiles/rmm-host-common.dir/src/host_rmi_wrappers.c.o" "CMakeFiles/rmm-host-common.dir/src/host_utils.c.o"
+/usr/bin/ranlib librmm-host-common.a

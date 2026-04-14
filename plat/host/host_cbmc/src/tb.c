@@ -17,8 +17,10 @@ void __init_global_state(unsigned long cmd)
 {
 	REACHABLE;
 	global_sanity_check();
+
 	/* Set up all the system register */
 	host_util_setup_sysreg_and_boot_manifest();
+
 	switch (cmd) {
 	case SMC_RMI_GRANULE_DELEGATE:
 	case SMC_RMI_GRANULE_UNDELEGATE: {
@@ -68,6 +70,9 @@ void tb_handle_smc(struct tb_regs *config)
 	case SMC_RMI_REALM_ACTIVATE:
 		result = smc_realm_activate(config->X1);
 		break;
+	// case SMC_RMI_CUSTOM_PRINT:
+	// 	result = smc_realm_custom_print(config->X1);
+	// 	break;
 	case SMC_RMI_REALM_DESTROY:
 		result = smc_realm_destroy(config->X1);
 		break;

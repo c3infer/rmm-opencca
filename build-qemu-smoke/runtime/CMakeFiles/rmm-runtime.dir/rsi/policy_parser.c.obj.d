@@ -1,0 +1,36 @@
+runtime/CMakeFiles/rmm-runtime.dir/rsi/policy_parser.c.obj: \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/rsi/policy_parser.c \
+ /home/amir/mica/staging/rmm-private-opencca/runtime/include/policy_parser.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint-gcc.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/string.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/debug/include/debug.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdarg.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdio.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/granule/include/granule.h \
+ /usr/aarch64-linux-gnu/include/assert.h \
+ /usr/aarch64-linux-gnu/include/features.h \
+ /usr/aarch64-linux-gnu/include/features-time64.h \
+ /usr/aarch64-linux-gnu/include/bits/wordsize.h \
+ /usr/aarch64-linux-gnu/include/bits/timesize.h \
+ /usr/aarch64-linux-gnu/include/stdc-predef.h \
+ /usr/aarch64-linux-gnu/include/sys/cdefs.h \
+ /usr/aarch64-linux-gnu/include/bits/long-double.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs-lp64.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/atomics.h \
+ /usr/aarch64-linux-gnu/include/errno.h \
+ /usr/aarch64-linux-gnu/include/bits/errno.h \
+ /usr/aarch64-linux-gnu/include/linux/errno.h \
+ /usr/aarch64-linux-gnu/include/asm/errno.h \
+ /usr/aarch64-linux-gnu/include/asm-generic/errno.h \
+ /usr/aarch64-linux-gnu/include/asm-generic/errno-base.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/granule/include/aarch64/granule_lock.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/granule/include/granule_types.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/memory.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/slot_buf/include/buffer.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc-rmi.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc.h

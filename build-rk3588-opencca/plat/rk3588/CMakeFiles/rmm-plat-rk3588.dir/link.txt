@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-plat-rk3588.a "CMakeFiles/rmm-plat-rk3588.dir/src/rk3588_setup.c.obj" "CMakeFiles/rmm-plat-rk3588.dir/src/rk3588_granule.c.obj" "CMakeFiles/rmm-plat-rk3588.dir/src/rk3588_memory.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-plat-rk3588.a

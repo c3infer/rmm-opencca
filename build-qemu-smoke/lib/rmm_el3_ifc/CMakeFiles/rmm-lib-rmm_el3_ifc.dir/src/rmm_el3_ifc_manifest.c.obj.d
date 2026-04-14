@@ -1,0 +1,32 @@
+lib/rmm_el3_ifc/CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_ifc_manifest.c.obj: \
+ /home/amir/mica/staging/rmm-private-opencca/lib/rmm_el3_ifc/src/rmm_el3_ifc_manifest.c \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch_features.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint-gcc.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/opencca/include/opencca.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/instr_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/types.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/debug/include/debug.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdarg.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdio.h \
+ /usr/aarch64-linux-gnu/include/assert.h \
+ /usr/aarch64-linux-gnu/include/features.h \
+ /usr/aarch64-linux-gnu/include/features-time64.h \
+ /usr/aarch64-linux-gnu/include/bits/wordsize.h \
+ /usr/aarch64-linux-gnu/include/bits/timesize.h \
+ /usr/aarch64-linux-gnu/include/stdc-predef.h \
+ /usr/aarch64-linux-gnu/include/sys/cdefs.h \
+ /usr/aarch64-linux-gnu/include/bits/long-double.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs-lp64.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/rmm_el3_ifc/include/rmm_el3_ifc.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/sizes.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/rmm_el3_ifc/src/rmm_el3_ifc_priv.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/string.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/xlat/include/xlat_defs.h

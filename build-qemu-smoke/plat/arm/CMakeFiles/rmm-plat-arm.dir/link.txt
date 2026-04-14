@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-plat-arm.a "CMakeFiles/rmm-plat-arm.dir/src/arm_setup.c.obj" "CMakeFiles/rmm-plat-arm.dir/src/arm_granule.c.obj" "CMakeFiles/rmm-plat-arm.dir/src/arm_memory.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-plat-arm.a

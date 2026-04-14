@@ -16,4 +16,9 @@ void handle_rsi_features(struct rec *rec, struct rsi_result *res)
 	ASSERT(false, "handle_rsi_features");
 }
 
+void handle_rsi_upload_policy(struct rec *rec, struct rsi_result *res)
+{
+	ASSERT(false, "handle_rsi_upload_policy");
+}
+
 #endif /* CBMC */

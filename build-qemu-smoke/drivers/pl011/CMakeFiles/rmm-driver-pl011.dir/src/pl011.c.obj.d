@@ -1,0 +1,31 @@
+drivers/pl011/CMakeFiles/rmm-driver-pl011.dir/src/pl011.c.obj: \
+ /home/amir/mica/staging/rmm-private-opencca/drivers/pl011/src/pl011.c \
+ /usr/aarch64-linux-gnu/include/assert.h \
+ /usr/aarch64-linux-gnu/include/features.h \
+ /usr/aarch64-linux-gnu/include/features-time64.h \
+ /usr/aarch64-linux-gnu/include/bits/wordsize.h \
+ /usr/aarch64-linux-gnu/include/bits/timesize.h \
+ /usr/aarch64-linux-gnu/include/stdc-predef.h \
+ /usr/aarch64-linux-gnu/include/sys/cdefs.h \
+ /usr/aarch64-linux-gnu/include/bits/long-double.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs.h \
+ /usr/aarch64-linux-gnu/include/gnu/stubs-lp64.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/console/include/console.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint-gcc.h \
+ /usr/aarch64-linux-gnu/include/errno.h \
+ /usr/aarch64-linux-gnu/include/bits/errno.h \
+ /usr/aarch64-linux-gnu/include/linux/errno.h \
+ /usr/aarch64-linux-gnu/include/asm/errno.h \
+ /usr/aarch64-linux-gnu/include/asm-generic/errno.h \
+ /usr/aarch64-linux-gnu/include/asm-generic/errno-base.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/mmio.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/arch.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/opencca/include/opencca.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/instr_helpers.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/common/include/types.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/drivers/pl011/include/pl011.h

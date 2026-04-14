@@ -8,7 +8,7 @@
 #include <ripas.h>
 #include <rsi-handler.h>
 #include <smc-rsi.h>
-#include <status.h>
+#include <buffer.h>
 
 void handle_rsi_ipa_state_set(struct rec *rec,
 			      struct rmi_rec_exit *rec_exit,
@@ -19,6 +19,35 @@ void handle_rsi_ipa_state_set(struct rec *rec,
 	enum ripas ripas_val = (enum ripas)rec->regs[3];
 	enum ripas_change_destroyed change_destroyed =
 			(enum ripas_change_destroyed)rec->regs[4];
+	struct rd *rd;
+
+    granule_lock(rec->realm_info.g_rd, GRANULE_STATE_RD);
+    rd = buffer_granule_map(rec->realm_info.g_rd, SLOT_RD);
+    if (rd == NULL) {
+        INFO("RD is NULL\n");
+        granule_unlock(rec->realm_info.g_rd);
+        res->smc_res.x[0] = RSI_ERROR_INPUT;
+        return;
+    }
+	// unsigned long pd_addr;
+	// pd_addr = rd->pd;
+	// struct parsed_payload cfg;
+	// load_cfg(pd_addr, &cfg);
+
+    // if (config_is_nonempty(&cfg) && policy_has_rsi_block_channel(&cfg)) {
+    //     INFO("RSIs are BLOCKED!\n");
+	// 	buffer_unmap(rd);
+    //     granule_unlock(rec->realm_info.g_rd);
+    //     res->smc_res.x[0] = RSI_ERROR_INPUT;
+    //     return;
+    // } else {
+	// 	if (config_is_nonempty(&cfg) && policy_has_rsi_scrub_channel(&cfg)) {
+	// 		INFO("RSIs are SCRUBBED!\n");
+	// 		base = 0;
+	// 	}
+	// }
+	buffer_unmap(rd); 
+    granule_unlock(rec->realm_info.g_rd);
 
 	if ((ripas_val > RIPAS_RAM) ||
 	    !GRANULE_ALIGNED(base)  || !GRANULE_ALIGNED(top) ||

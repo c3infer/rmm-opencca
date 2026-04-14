@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-arch.a "CMakeFiles/rmm-lib-arch.dir/src/vmid.c.obj" "CMakeFiles/rmm-lib-arch.dir/src/arch_features.c.obj" "CMakeFiles/rmm-lib-arch.dir/src/pmu.c.obj" "CMakeFiles/rmm-lib-arch.dir/src/pauth.c.obj" "CMakeFiles/rmm-lib-arch.dir/src/simd.c.obj" "CMakeFiles/rmm-lib-arch.dir/src/aarch64/cache_helpers.S.obj" "CMakeFiles/rmm-lib-arch.dir/src/aarch64/simd_helpers.S.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-arch.a

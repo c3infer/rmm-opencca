@@ -5,6 +5,7 @@
 
 #include <arch.h>
 #include <arch_features.h>
+#include <attest_app.h>
 #include <buffer.h>
 #include <debug.h>
 #include <gic.h>
@@ -210,6 +211,7 @@ static void rec_aux_granules_init(struct rec *r)
 {
 	void *rec_aux;
 	struct rec_aux_data *aux_data;
+	int ret;
 
 	/* Map auxiliary granules */
 	rec_aux = buffer_aux_granules_map(r->g_aux, r->num_rec_aux);
@@ -241,6 +243,13 @@ static void rec_aux_granules_init(struct rec *r)
 		REC_ATTEST_SIZE;
 
 	rec_simd_state_init(r);
+
+	/*
+	 * Initialize per-REC attestation app data. This must be ready before
+	 * RSI_ATTEST_TOKEN_INIT(_GROUP), which calls attest_token_sign_ctx_init().
+	 */
+	ret = attest_app_init(&r->attest_app_data, NULL, 0U, NULL);
+	assert(ret == 0);
 
 	/* Unmap auxiliary granules */
 	buffer_aux_unmap(rec_aux, r->num_rec_aux);

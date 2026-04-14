@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-granule.a "CMakeFiles/rmm-lib-granule.dir/src/granule.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-granule.a

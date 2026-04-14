@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-smc.a "CMakeFiles/rmm-lib-smc.dir/src/fake_host/smc_wrapper.c.o"
+/usr/bin/ranlib librmm-lib-smc.a

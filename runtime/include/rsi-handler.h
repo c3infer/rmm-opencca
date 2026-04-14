@@ -80,6 +80,7 @@ struct rsi_result {
 
 void handle_rsi_version(struct rec *rec, struct rsi_result *res);
 void handle_rsi_features(struct rec *rec, struct rsi_result *res);
+void handle_rsi_upload_policy(struct rec *rec, struct rsi_result *res);
 void handle_rsi_realm_config(struct rec *rec, struct rsi_result *res);
 void handle_rsi_host_call(struct rec *rec, struct rmi_rec_exit *rec_exit,
 			  struct rsi_result *res);
@@ -90,6 +91,10 @@ void handle_rsi_measurement_read(struct rec *rec, struct rsi_result *res);
 void handle_rsi_measurement_extend(struct rec *rec, struct rsi_result *res);
 void handle_rsi_attest_token_init(struct rec *rec, struct rsi_result *res);
 void handle_rsi_attest_token_continue(struct rec *rec,
+				      struct rmi_rec_exit *rec_exit,
+				      struct rsi_result *res);
+void handle_rsi_attest_token_init_group(struct rec *rec, struct rsi_result *res);
+void handle_rsi_attest_token_continue_group(struct rec *rec,
 				      struct rmi_rec_exit *rec_exit,
 				      struct rsi_result *res);
 void handle_psci(struct rec *rec, struct rmi_rec_exit *rec_exit,

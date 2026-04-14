@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-debug.a "CMakeFiles/rmm-lib-debug.dir/src/backtrace.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-debug.a

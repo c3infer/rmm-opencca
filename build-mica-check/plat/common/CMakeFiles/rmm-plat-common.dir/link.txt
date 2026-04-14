@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-plat-common.a "CMakeFiles/rmm-plat-common.dir/src/plat_common_init.c.o"
+/usr/bin/ranlib librmm-plat-common.a

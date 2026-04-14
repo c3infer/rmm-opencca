@@ -17,7 +17,8 @@ target_include_directories(rmm-lib-arch
             # Yocto recipe will define this variable as part of the build.
             ${CMAKE_INCLUDE_PATH}
     PRIVATE "src/${RMM_ARCH}"
-            "src/include")
+            "src/include"
+            "${CMAKE_SOURCE_DIR}/lib/debug/include")
 
 # Include files needed for aarch64, fake_host and cbmc builds
 target_sources(rmm-lib-arch

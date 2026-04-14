@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-measurement.a "CMakeFiles/rmm-lib-measurement.dir/src/measurement.c.o" "CMakeFiles/rmm-lib-measurement.dir/src/rim.c.o"
+/usr/bin/ranlib librmm-lib-measurement.a

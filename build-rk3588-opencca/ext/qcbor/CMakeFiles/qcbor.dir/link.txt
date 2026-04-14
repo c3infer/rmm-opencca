@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc libqcbor.a CMakeFiles/qcbor.dir/src/ieee754.c.obj CMakeFiles/qcbor.dir/src/qcbor_decode.c.obj CMakeFiles/qcbor.dir/src/qcbor_encode.c.obj CMakeFiles/qcbor.dir/src/qcbor_err_to_str.c.obj CMakeFiles/qcbor.dir/src/UsefulBuf.c.obj
+/usr/bin/aarch64-linux-gnu-ranlib libqcbor.a

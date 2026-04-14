@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/amir/mica/staging/rmm-private-opencca/lib/arch/include/aarch64/asm_macros.S
+
+/home/amir/mica/staging/rmm-private-opencca/lib/common/include/sizes.h
+utils_def.h
+-
+
+/home/amir/mica/staging/rmm-private-opencca/lib/common/include/utils_def.h
+stdint.h
+-
+
+/home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h
+
+/home/amir/mica/staging/rmm-private-opencca/lib/rmm_el3_ifc/include/rmm_el3_ifc.h
+sizes.h
+-
+smc.h
+-
+stdbool.h
+-
+stddef.h
+-
+
+/home/amir/mica/staging/rmm-private-opencca/lib/rmm_el3_ifc/src/aarch64/rmm_el3_ifc_helpers.S
+asm_macros.S
+-
+rmm_el3_ifc.h
+-
+
+/home/amir/mica/staging/rmm-private-opencca/lib/smc/include/smc.h
+utils_def.h
+-
+

@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <rec.h>
 #include <s2tt.h>
+#include <policy_parser.h>
 
 #define REALM_NEW		0U
 #define REALM_ACTIVE		1U
@@ -62,6 +63,21 @@ struct rd {
 
 	/* Realm Personalization Value */
 	unsigned char rpv[RPV_SIZE];
+
+	/* Policy Descriptor Address*/
+	unsigned long pd;
+
+	bool sealed_mappings;   /* NEW: block MAP_UNPROTECTED when true */
+	bool rsi_uploaded_policy; /* NEW: track if RSI Upload Policy done */
+
+	/*
+	 * Dummy backing page used to avoid stalling guest accesses before
+	 * policy upload/activation. When non-zero, pre-activation protected
+	 * mappings may be mapped read-only to this single page.
+	 *
+	 * Security note: this page must be zeroed before first use.
+	 */
+	unsigned long dummy_shared_pa;
 };
 COMPILER_ASSERT((U(offsetof(struct rd, measurement)) & 7U) == 0U);
 COMPILER_ASSERT(sizeof(struct rd) <= GRANULE_SIZE);
@@ -231,4 +247,29 @@ enum s2_walk_status realm_ipa_to_pa(struct rec *rec,
 enum s2_walk_status realm_ipa_get_ripas(struct rec *rec, unsigned long start,
 					unsigned long end, unsigned long *top,
 					enum ripas *ripas_ptr);
+
+unsigned long unmap_ipa(unsigned long rd_addr,
+						unsigned long ipa_addr,
+						unsigned long expected_pa_addr);
+
+unsigned long map_ipa_to_pa(unsigned long rd_addr,
+							unsigned long pa_addr,
+							unsigned long ipa_addr,
+							bool *used_any);
+
+// bool load_cfg(unsigned long pd_addr, struct parsed_payload *cfg0);
+							
+uint16_t find_prot_for_mem_with_gpa_in_config(unsigned long gpa, 
+											  unsigned long in_rd_addr,
+											  unsigned long pd_addr,
+											  bool *used_any);
+uint16_t update_mem_sharing_mapped_state(unsigned long gpa,
+										 unsigned long in_rd_addr,
+										 unsigned long pd_addr,
+										 bool used_any);
+
+size_t collect_active_vm_hashes(struct parsed_payload *root,
+                                uint32_t *out_hashes,
+                                size_t max_hashes);
+
 #endif /* REALM_H */

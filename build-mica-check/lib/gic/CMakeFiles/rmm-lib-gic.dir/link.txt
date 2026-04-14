@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-gic.a "CMakeFiles/rmm-lib-gic.dir/src/gic.c.o"
+/usr/bin/ranlib librmm-lib-gic.a

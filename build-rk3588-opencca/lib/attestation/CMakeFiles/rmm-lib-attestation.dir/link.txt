@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-attestation.a "CMakeFiles/rmm-lib-attestation.dir/src/attestation_key.c.obj" "CMakeFiles/rmm-lib-attestation.dir/src/attestation_rnd.c.obj" "CMakeFiles/rmm-lib-attestation.dir/src/attestation_token.c.obj" "CMakeFiles/rmm-lib-attestation.dir/src/attestation_utils.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-attestation.a

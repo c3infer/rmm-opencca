@@ -21,7 +21,6 @@ target_compile_definitions(rmm-runtime
 
 target_link_libraries(rmm-runtime
     PRIVATE rmm-lib
-            rmm-lib-opencca
             rmm-platform)
 
 target_include_directories(rmm-runtime
@@ -77,7 +76,8 @@ target_sources(rmm-runtime
             "core/sysregs.c"
             "core/timers.c"
             "core/opencca_fwb.c"
-            "core/opencca_timers.c")
+            "core/opencca_timers.c"
+            "core/app_compat.c")
 
 target_sources(rmm-runtime
     PRIVATE "rmi/feature.c"
@@ -85,8 +85,13 @@ target_sources(rmm-runtime
             "rmi/realm.c"
             "rmi/rec.c"
             "rmi/rtt.c"
+            "rmi/rtt_unknown_shared.c"
             "rmi/run.c"
-            "rmi/system.c")
+            "rmi/version.c"
+            "rmi/private_shared_table.c"
+            "rmi/realm_add_meta.c"
+            "rmi/rmi_rsi_count.c"
+            "rmi/psr_hpa_share_table.c")
 
 
 if(HOST_VARIANT STREQUAL "host_cbmc")
@@ -98,7 +103,7 @@ if(HOST_VARIANT STREQUAL "host_cbmc")
                 "rsi/fake_host/cbmc_memory.c"
                 "rsi/fake_host/cbmc_psci.c"
                 "rsi/fake_host/cbmc_realm_attest.c"
-                "rsi/fake_host/cbmc_system.c")
+                "rsi/fake_host/cbmc_version.c")
     # In case of 'host_cbmc' variant no further source files are added to
     # the build.
     return()
@@ -115,7 +120,15 @@ target_sources(rmm-runtime
             "rsi/memory.c"
             "rsi/psci.c"
             "rsi/realm_ipa_helper.c"
+            "rsi/policy.c"
             "rsi/realm_attest.c"
-            "rsi/system.c")
+            "rsi/realm_attest_group.c"
+            "rsi/version.c"
+            "rsi/sgt_granules.c"
+            "rsi/sgt.c"
+            "rsi/policy_validator.c"
+            "rsi/policy_validator_actions.c"
+            "rsi/policy_parser.c"
+            "rsi/transition_table.c")
 
 include (tests/CMakeLists.txt)

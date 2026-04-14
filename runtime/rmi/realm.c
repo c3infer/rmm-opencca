@@ -19,8 +19,16 @@
 #include <stddef.h>
 #include <string.h>
 #include <vmid.h>
+#include <private_shared_table.h>
+#include <realm_add_meta.h>
+#include <rmi_rsi_count.h>
+#include <sgt.h>
+#include <sgt_granules.h>
+// #include <rd_table.h>
 
 #define RMI_FEATURE_MIN_IPA_SIZE	PARANGE_0000_WIDTH
+
+static void realm_scrub_stale_bookkeeping(void);
 
 unsigned long smc_realm_activate(unsigned long rd_addr)
 {
@@ -42,12 +50,73 @@ unsigned long smc_realm_activate(unsigned long rd_addr)
 	} else {
 		ret = RMI_ERROR_REALM;
 	}
+
+	// trt_add_entry(rd->measurement[RIM_MEASUREMENT_SLOT], rd_addr);
+	// trt_pretty_print();
+	ram_add_entry_rim(rd->measurement[RIM_MEASUREMENT_SLOT], rd_addr, rd->pd);
+	ram_pretty_print();
+	buffer_unmap(rd);
+
+	granule_unlock(g_rd);
+	rrt_pretty_print();
+
+	return ret;
+}
+
+unsigned long smc_realm_custom_print(unsigned long rd_addr)
+{
+	struct rd *rd;
+	struct granule *g_rd;
+	unsigned long ret;
+
+	g_rd = find_lock_granule(rd_addr, GRANULE_STATE_RD);
+	if (g_rd == NULL) {
+		return RMI_ERROR_INPUT;
+	}
+
+	rd = buffer_granule_map(g_rd, SLOT_RD);
+	assert(rd != NULL);
+
+	ret = RMI_SUCCESS;
+
 	buffer_unmap(rd);
 
 	granule_unlock(g_rd);
 
 	return ret;
 }
+
+unsigned long smc_realm_set_protected_shared_range(unsigned long rd_addr, unsigned long ipa,
+				     unsigned long size)
+{
+	struct rd *rd;
+	struct granule *g_rd;
+	unsigned long ret;
+
+	g_rd = find_lock_granule(rd_addr, GRANULE_STATE_RD);
+	if (g_rd == NULL) {
+		return RMI_ERROR_INPUT;
+	}
+
+	rd = buffer_granule_map(g_rd, SLOT_RD);
+	assert(rd != NULL);
+
+	pst_pretty_print();
+	pst_add_tuple(rd_addr, ipa, size);
+	pst_pretty_print();
+	
+	INFO("Protected shared range set in RD 0x%lx: IPA 0x%lx, Size 0x%lx\n",
+		rd_addr, ipa, size);
+
+	ret = RMI_SUCCESS;
+
+	buffer_unmap(rd);
+
+	granule_unlock(g_rd);
+
+	return ret;
+}
+
 
 static bool get_realm_params(struct rmi_realm_params *realm_params,
 				unsigned long realm_params_addr)
@@ -234,17 +303,33 @@ static void init_s2_starting_level(struct rd *rd)
 static bool validate_realm_params(struct rmi_realm_params *p)
 {
 	unsigned long feat_reg0 = get_feature_register_0();
+	unsigned long max_s2sz = EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0);
+	unsigned long max_bps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS, feat_reg0);
+	unsigned long max_wps = EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS, feat_reg0);
+	unsigned long max_sve_vl = EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, feat_reg0);
+	unsigned long max_pmu = EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, feat_reg0);
+	unsigned int expected_rtts;
+
+	INFO("REALM_CREATE params: flags=0x%lx s2sz=%u sve_vl=%u bps=%u wps=%u pmu=%u algo=%u vmid=%u rtt_base=0x%lx sl=%ld rtt_num=%u\n",
+	     p->flags, p->s2sz, p->sve_vl, p->num_bps, p->num_wps,
+	     p->pmu_num_ctrs, p->algorithm, (unsigned int)p->vmid,
+	     p->rtt_base, p->rtt_level_start, p->rtt_num_start);
+	INFO("REALM_CREATE feat0=0x%lx limits: s2sz<=%lu bps<=%lu wps<=%lu sve_vl<=%lu pmu<=%lu\n",
+	     feat_reg0, max_s2sz, max_bps, max_wps, max_sve_vl, max_pmu);
 
 	/* Validate LPA2 flag */
 	if (is_lpa2_requested(p)  &&
 	    (EXTRACT(RMI_FEATURE_REGISTER_0_LPA2, feat_reg0) ==
 							RMI_FEATURE_FALSE)) {
+		INFO("REALM_CREATE reject: LPA2 requested but unsupported\n");
 		return false;
 	}
 
 	/* Validate S2SZ field */
 	if ((p->s2sz < RMI_FEATURE_MIN_IPA_SIZE) ||
-	    (p->s2sz > EXTRACT(RMI_FEATURE_REGISTER_0_S2SZ, feat_reg0))) {
+	    (p->s2sz > max_s2sz)) {
+		INFO("REALM_CREATE reject: bad s2sz=%u (min=%u max=%lu)\n",
+		     p->s2sz, RMI_FEATURE_MIN_IPA_SIZE, max_s2sz);
 		return false;
 	}
 
@@ -253,9 +338,11 @@ static bool validate_realm_params(struct rmi_realm_params *p)
 	 * The values 0 are reserved.
 	 */
 	if ((p->num_bps == 0U) || (p->num_bps >
-		EXTRACT(RMI_FEATURE_REGISTER_0_NUM_BPS, feat_reg0)) ||
+		max_bps) ||
 		(p->num_wps == 0U) || (p->num_wps >
-		EXTRACT(RMI_FEATURE_REGISTER_0_NUM_WPS, feat_reg0))) {
+		max_wps)) {
+		INFO("REALM_CREATE reject: bad bps/wps bps=%u (max=%lu) wps=%u (max=%lu)\n",
+		     p->num_bps, max_bps, p->num_wps, max_wps);
 		return false;
 	}
 
@@ -263,12 +350,14 @@ static bool validate_realm_params(struct rmi_realm_params *p)
 	if (EXTRACT(RMI_REALM_FLAGS_SVE, p->flags) == RMI_FEATURE_TRUE) {
 		if (EXTRACT(RMI_FEATURE_REGISTER_0_SVE_EN, feat_reg0) ==
 						      RMI_FEATURE_FALSE) {
+			INFO("REALM_CREATE reject: SVE requested but unsupported\n");
 			return false;
 		}
 
 		/* Validate SVE_VL value */
-		if (p->sve_vl >
-			EXTRACT(RMI_FEATURE_REGISTER_0_SVE_VL, feat_reg0)) {
+		if (p->sve_vl > max_sve_vl) {
+			INFO("REALM_CREATE reject: bad sve_vl=%u (max=%lu)\n",
+			     p->sve_vl, max_sve_vl);
 			return false;
 		}
 	}
@@ -280,8 +369,9 @@ static bool validate_realm_params(struct rmi_realm_params *p)
 
 	/* Validate number of PMU counters if PMUv3 is enabled */
 	if (EXTRACT(RMI_REALM_FLAGS_PMU, p->flags) == RMI_FEATURE_TRUE) {
-		if (p->pmu_num_ctrs >
-		    EXTRACT(RMI_FEATURE_REGISTER_0_PMU_NUM_CTRS, feat_reg0)) {
+		if (p->pmu_num_ctrs > max_pmu) {
+			INFO("REALM_CREATE reject: bad pmu_num_ctrs=%u (max=%lu)\n",
+			     p->pmu_num_ctrs, max_pmu);
 			return false;
 		}
 
@@ -290,17 +380,22 @@ static bool validate_realm_params(struct rmi_realm_params *p)
 		 * FEAT_HMPN0 is implemented
 		 */
 		if ((p->pmu_num_ctrs == 0U) && !is_feat_hpmn0_present()) {
+			INFO("REALM_CREATE reject: PMU enabled but pmu_num_ctrs=0 and HMPN0 absent\n");
 			return false;
 		}
 	}
 
 	if (!validate_ipa_bits_and_sl(p->s2sz, p->rtt_level_start,
 						is_lpa2_requested(p))) {
+		INFO("REALM_CREATE reject: invalid s2sz/sl combination s2sz=%u sl=%ld lpa2=%u\n",
+		     p->s2sz, p->rtt_level_start, is_lpa2_requested(p));
 		return false;
 	}
 
-	if (s2_num_root_rtts(p->s2sz, (int)p->rtt_level_start) !=
-						p->rtt_num_start) {
+	expected_rtts = s2_num_root_rtts(p->s2sz, (int)p->rtt_level_start);
+	if (expected_rtts != p->rtt_num_start) {
+		INFO("REALM_CREATE reject: bad rtt_num_start=%u expected=%u\n",
+		     p->rtt_num_start, expected_rtts);
 		return false;
 	}
 
@@ -316,11 +411,18 @@ static bool validate_realm_params(struct rmi_realm_params *p)
 	case RMI_HASH_SHA_512:
 		break;
 	default:
+		INFO("REALM_CREATE reject: unsupported algorithm=%u\n", p->algorithm);
 		return false;
 	}
 
 	/* Check VMID collision and reserve it atomically if available */
-	return vmid_reserve((unsigned int)p->vmid);
+	if (!vmid_reserve((unsigned int)p->vmid)) {
+		INFO("REALM_CREATE reject: VMID %u is invalid or already reserved\n",
+		     (unsigned int)p->vmid);
+		return false;
+	}
+
+	return true;
 }
 
 static void free_sl_rtts(struct granule *g_rtt, unsigned int num_rtts)
@@ -390,6 +492,105 @@ out_err:
 	return false;
 }
 
+unsigned long smc_realm_pd(unsigned long rd_addr, unsigned long pd_addr)
+{
+	struct granule *g_rd, *g_pd;
+	struct rd *rd;
+
+	g_rd = find_lock_granule(rd_addr, GRANULE_STATE_RD);
+	if (g_rd == NULL) {
+		return RMI_ERROR_INPUT;
+	}
+
+	rd = buffer_granule_map(g_rd, SLOT_RD);
+	assert(rd != NULL);
+
+	g_pd = find_lock_granule(pd_addr, GRANULE_STATE_DELEGATED);
+	if (g_pd == NULL) {
+		buffer_unmap(rd);
+		granule_unlock(g_rd);
+		return RMI_ERROR_INPUT;
+	}
+
+	rd->pd = pd_addr;
+
+	granule_unlock(g_pd);
+	buffer_unmap(rd);
+	granule_unlock(g_rd);
+
+	return RMI_SUCCESS;
+}
+
+unsigned long smc_realm_dummy_page(unsigned long rd_addr, unsigned long dummy_pa)
+{
+	struct granule *g_rd, *g_dummy;
+	struct rd *rd;
+	void *dummy;
+
+	g_rd = find_lock_granule(rd_addr, GRANULE_STATE_RD);
+	if (g_rd == NULL) {
+		return RMI_ERROR_INPUT;
+	}
+
+	rd = buffer_granule_map(g_rd, SLOT_RD);
+	assert(rd != NULL);
+
+	/*
+	 * Only allow setting the dummy page before the policy is uploaded.
+	 * After upload, mappings/ACLs should be final and this indirection
+	 * is not expected to be used.
+	 */
+	if (rd->rsi_uploaded_policy) {
+		buffer_unmap(rd);
+		granule_unlock(g_rd);
+		return RMI_ERROR_INPUT;
+	}
+
+	/* Idempotent: allow repeated calls with the same PA. */
+	if ((rd->dummy_shared_pa != 0UL) && (rd->dummy_shared_pa != dummy_pa)) {
+		buffer_unmap(rd);
+		granule_unlock(g_rd);
+		return RMI_ERROR_INPUT;
+	}
+
+	g_dummy = find_lock_granule(dummy_pa, GRANULE_STATE_DELEGATED);
+	if (g_dummy == NULL) {
+		buffer_unmap(rd);
+		granule_unlock(g_rd);
+		return RMI_ERROR_INPUT;
+	}
+
+	/* Zero it in RMM as a safety net (host should also zero). */
+	dummy = buffer_granule_map(g_dummy, SLOT_DELEGATED);
+	assert(dummy != NULL);
+	memset(dummy, 0, GRANULE_SIZE);
+	buffer_unmap(dummy);
+
+	rd->dummy_shared_pa = dummy_pa;
+
+	granule_unlock(g_dummy);
+	buffer_unmap(rd);
+	granule_unlock(g_rd);
+
+	return RMI_SUCCESS;
+}
+
+unsigned long smc_sgt(unsigned long sgt_addr)
+{
+	struct granule *g_sgt;
+
+	g_sgt = find_lock_granule(sgt_addr, GRANULE_STATE_DELEGATED);
+	if (g_sgt == NULL) {
+		return RMI_ERROR_INPUT;
+	}
+
+	sgt_granules_add_pa(sgt_addr);
+	sgt_granules_pretty_print();
+	granule_unlock(g_sgt);
+
+	return RMI_SUCCESS;
+}
+
 unsigned long smc_realm_create(unsigned long rd_addr,
 			       unsigned long realm_params_addr)
 {
@@ -397,12 +598,18 @@ unsigned long smc_realm_create(unsigned long rd_addr,
 	struct rd *rd;
 	struct rmi_realm_params p;
 
+	/* Defensive scrub in case prior destroy failed before cleanup. */
+	realm_scrub_stale_bookkeeping();
+
 	if (!get_realm_params(&p, realm_params_addr)) {
+		INFO("REALM_CREATE reject: cannot read realm params at 0x%lx\n",
+		     realm_params_addr);
 		return RMI_ERROR_INPUT;
 	}
 
 	/* coverity[uninit_use_in_call:SUPPRESS] */
 	if (!validate_realm_params(&p)) {
+		INFO("REALM_CREATE reject: validate_realm_params failed\n");
 		return RMI_ERROR_INPUT;
 	}
 
@@ -433,6 +640,10 @@ unsigned long smc_realm_create(unsigned long rd_addr,
 
 	set_rd_state(rd, REALM_NEW);
 	set_rd_rec_count(rd, 0UL);
+	rd->pd = 0UL;
+	rd->sealed_mappings = false;
+	rd->rsi_uploaded_policy = false;
+	rd->dummy_shared_pa = 0UL;
 	rd->s2_ctx.g_rtt = find_granule(p.rtt_base);
 	rd->s2_ctx.ipa_bits = p.s2sz;
 	rd->s2_ctx.s2_starting_level = (int)p.rtt_level_start;
@@ -473,6 +684,10 @@ unsigned long smc_realm_create(unsigned long rd_addr,
 			(i * sizeof(struct granule))), GRANULE_STATE_RTT);
 	}
 
+	// rdtab_add(rd_addr);
+
+	// rdtab_pretty_print();
+
 	return RMI_SUCCESS;
 }
 
@@ -497,12 +712,204 @@ static unsigned long total_root_rtt_refcount(struct granule *g_rtt,
 	return refcount;
 }
 
+static size_t sgt_remove_entries_for_rd(struct sgt *t, unsigned long rd_addr)
+{
+	size_t removed = 0U;
+	size_t w = 0U;
+	size_t before_count;
+
+	if (t == NULL) {
+		return 0U;
+	}
+
+	before_count = t->count;
+
+	for (size_t i = 0U; i < t->count; i++) {
+		if (t->entries[i].rd == rd_addr) {
+			removed++;
+			continue;
+		}
+
+		if (w != i) {
+			t->entries[w] = t->entries[i];
+		}
+		w++;
+	}
+
+	t->count = w;
+	if (removed > 0U) {
+		INFO("SGT remove_by_rd: rd=0x%lx removed=%lu before=%lu after=%lu\n",
+		     rd_addr, (unsigned long)removed,
+		     (unsigned long)before_count, (unsigned long)t->count);
+	}
+	return removed;
+}
+
+static bool rd_addr_is_live(unsigned long rd_addr)
+{
+	type_rim_t ram_e;
+
+	return ram_get_entry_from_rd(rd_addr, &ram_e) == 1;
+}
+
+static size_t sgt_remove_stale_rd_entries(struct sgt *t)
+{
+	size_t removed = 0U;
+	size_t w = 0U;
+	size_t before_count;
+
+	if (t == NULL) {
+		return 0U;
+	}
+
+	before_count = t->count;
+
+	for (size_t i = 0U; i < t->count; i++) {
+		if (!rd_addr_is_live(t->entries[i].rd)) {
+			INFO("SGT stale_remove: drop entry rd=0x%lx pa=0x%lx gpa=0x%lx\n",
+			     t->entries[i].rd, t->entries[i].pa, t->entries[i].gpa);
+			removed++;
+			continue;
+		}
+
+		if (w != i) {
+			t->entries[w] = t->entries[i];
+		}
+		w++;
+	}
+
+	t->count = w;
+	if (removed > 0U) {
+		INFO("SGT stale_remove: removed=%lu before=%lu after=%lu\n",
+		     (unsigned long)removed,
+		     (unsigned long)before_count,
+		     (unsigned long)t->count);
+	}
+	return removed;
+}
+
+/*
+ * struct sgt is large (entries[4096]); keep destroy scratch buffers static to
+ * avoid blowing the per-CPU RMM stack during REALM_DESTROY.
+ */
+static struct sgt g_realm_destroy_sgt_tbl;
+static unsigned long g_realm_destroy_sgt_addrs[MAX_SGT_GRANULES_ENTRIES];
+
+static void realm_scrub_stale_bookkeeping(void)
+{
+	bool have_sgt;
+	bool cleared_sgt = false;
+	size_t sgt_removed = 0U;
+	unsigned int pst_removed;
+	unsigned int ram_removed;
+
+	pst_removed = pst_scrub_stale_entries();
+	ram_removed = ram_scrub_stale_entries();
+
+	memset(g_realm_destroy_sgt_addrs, 0, sizeof(g_realm_destroy_sgt_addrs));
+	have_sgt = sgt_load_into(&g_realm_destroy_sgt_tbl,
+				 g_realm_destroy_sgt_addrs);
+	if (!have_sgt) {
+		INFO("SGT scrub: load failed; preserving granule registry\n");
+	} else {
+		sgt_removed = sgt_remove_stale_rd_entries(&g_realm_destroy_sgt_tbl);
+		if (sgt_removed > 0U) {
+			if (g_realm_destroy_sgt_tbl.count == 0U) {
+				INFO("SGT scrub: table empty after stale removal, clearing granules\n");
+				cleared_sgt = sgt_clear_granules(g_realm_destroy_sgt_addrs);
+				if (!cleared_sgt) {
+					INFO("SGT scrub: clear failed; preserving granule registry\n");
+				}
+			} else {
+				INFO("SGT scrub: storing table after stale removal, count=%lu\n",
+				     (unsigned long)g_realm_destroy_sgt_tbl.count);
+				(void)sgt_store_to_granules(g_realm_destroy_sgt_addrs,
+							    &g_realm_destroy_sgt_tbl);
+			}
+		}
+	}
+	if (cleared_sgt && sgt_granules_all_released_to_host()) {
+		unsigned int pruned = sgt_granules_prune_released_to_host();
+		INFO("SGT scrub: pruned released granules=%u\n", pruned);
+	} else if (cleared_sgt) {
+		unsigned int pruned = sgt_granules_prune_released_to_host();
+		INFO("SGT scrub: table cleared; pruned released granules=%u\n", pruned);
+	}
+
+	if ((pst_removed > 0U) || (ram_removed > 0U) || (sgt_removed > 0U)) {
+		INFO("realm_create scrub: pst_removed=%u ram_removed=%u sgt_removed=%lu\n",
+		     pst_removed, ram_removed, (unsigned long)sgt_removed);
+	}
+}
+
+static void realm_cleanup_sgt_for_rd(unsigned long rd_addr)
+{
+	bool have_sgt;
+	bool cleared_sgt = false;
+	size_t removed;
+
+	memset(g_realm_destroy_sgt_addrs, 0, sizeof(g_realm_destroy_sgt_addrs));
+
+	have_sgt = sgt_load_into(&g_realm_destroy_sgt_tbl,
+				 g_realm_destroy_sgt_addrs);
+	if (!have_sgt) {
+		INFO("SGT cleanup: load failed while cleaning rd=0x%lx\n", rd_addr);
+		INFO("SGT cleanup: preserving granule registry on load failure\n");
+		return;
+	}
+
+	removed = sgt_remove_entries_for_rd(&g_realm_destroy_sgt_tbl, rd_addr);
+
+	if (removed > 0U) {
+		if (g_realm_destroy_sgt_tbl.count == 0U) {
+			INFO("SGT cleanup: rd=0x%lx removed all entries, clearing granules\n",
+			     rd_addr);
+			cleared_sgt = sgt_clear_granules(g_realm_destroy_sgt_addrs);
+			if (!cleared_sgt) {
+				INFO("SGT cleanup: clear failed for rd=0x%lx; preserving granule registry\n",
+				     rd_addr);
+			}
+		} else {
+			INFO("SGT cleanup: rd=0x%lx storing table after removal, count=%lu\n",
+			     rd_addr, (unsigned long)g_realm_destroy_sgt_tbl.count);
+			(void)sgt_store_to_granules(g_realm_destroy_sgt_addrs,
+						    &g_realm_destroy_sgt_tbl);
+		}
+	} else {
+		INFO("SGT cleanup: rd=0x%lx no entries removed\n", rd_addr);
+	}
+	if (cleared_sgt && sgt_granules_all_released_to_host()) {
+		unsigned int pruned = sgt_granules_prune_released_to_host();
+		INFO("SGT cleanup: pruned released granules=%u\n", pruned);
+	} else if (cleared_sgt) {
+		unsigned int pruned = sgt_granules_prune_released_to_host();
+		INFO("SGT cleanup: table cleared; pruned released granules=%u\n", pruned);
+	}
+
+	/*
+	 * SGT backing granules are host-owned and host must undelegate/free.
+	 * RMM only resets the PA registry after a successful clear operation.
+	 */
+}
+
+static void realm_cleanup_meta_for_rd(unsigned long rd_addr,
+				      unsigned long pd_addr,
+				      bool have_pd_addr)
+{
+	(void)ram_remove_entry_from_rd(rd_addr);
+	if (have_pd_addr) {
+		(void)ram_remove_entry_from_pd(pd_addr);
+	}
+	(void)pst_remove_entries_from_rd(rd_addr);
+}
+
 unsigned long smc_realm_destroy(unsigned long rd_addr)
 {
 	struct granule *g_rd;
 	struct granule *g_rtt;
 	struct rd *rd;
 	unsigned int num_rtts;
+	unsigned long pd_addr;
 	int res;
 
 	/* RD should not be destroyed if refcount != 0. */
@@ -513,6 +920,12 @@ unsigned long smc_realm_destroy(unsigned long rd_addr)
 			return RMI_ERROR_INPUT;
 		default:
 			assert(res == -EBUSY);
+			/*
+			 * Best-effort early cleanup: if destroy fails because RD is
+			 * still busy, clear PST/RAM tuples for this RD so stale
+			 * metadata does not leak across realm lifecycles.
+			 */
+			realm_cleanup_meta_for_rd(rd_addr, 0UL, false);
 			return RMI_ERROR_REALM;
 		}
 	}
@@ -522,9 +935,14 @@ unsigned long smc_realm_destroy(unsigned long rd_addr)
 
 	g_rtt = rd->s2_ctx.g_rtt;
 	num_rtts = rd->s2_ctx.num_root_rtts;
+	pd_addr = rd->pd;
 
 	/* Check if granules are unused */
 	if (total_root_rtt_refcount(g_rtt, num_rtts) != 0UL) {
+		/*
+		 * Best-effort early cleanup for failed destroy.
+		 */
+		realm_cleanup_meta_for_rd(rd_addr, 0UL, false);
 		buffer_unmap(rd);
 		granule_unlock(g_rd);
 		return RMI_ERROR_REALM;
@@ -537,6 +955,15 @@ unsigned long smc_realm_destroy(unsigned long rd_addr)
 	 * Just release the VMID value so it can be used in another Realm.
 	 */
 	vmid_free(rd->s2_ctx.vmid);
+
+	/*
+	 * Cleanup custom metadata owned by this Realm before RD is zeroed.
+	 */
+	realm_cleanup_meta_for_rd(rd_addr, pd_addr, true);
+	realm_cleanup_sgt_for_rd(rd_addr);
+
+	rd->pd = 0UL;
+	rd->dummy_shared_pa = 0UL;
 	buffer_unmap(rd);
 
 	free_sl_rtts(g_rtt, num_rtts);

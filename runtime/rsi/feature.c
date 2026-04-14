@@ -5,6 +5,10 @@
 #include <rec.h>
 #include <rsi-handler.h>
 #include <smc-rsi.h>
+#include <debug.h>
+#include <buffer.h>
+#include <granule.h>
+#include <realm.h>
 
 void handle_rsi_features(struct rec *rec, struct rsi_result *res)
 {

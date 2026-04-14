@@ -23,6 +23,7 @@
 #include <smc-rsi.h>
 #include <status.h>
 #include <sysreg_traps.h>
+#include <transition_table.h>
 
 static void system_abort(void)
 {
@@ -30,7 +31,7 @@ static void system_abort(void)
 	 * TODO: report the abort to the EL3.
 	 * We need to establish the exact EL3 API first.
 	 */
-	assert(false);
+	panic();
 }
 
 static bool fixup_aarch32_data_abort(struct rec *rec, unsigned long *esr)
@@ -161,11 +162,11 @@ static bool handle_sync_external_abort(struct rec *rec,
 		/*
 		 * The uncontainable SEA.
 		 * Fatal to the system.
+		 * Fall through.
 		 */
+	default:
 		system_abort();
 		break;
-	default:
-		assert(false);
 	}
 
 	return true;
@@ -357,7 +358,7 @@ static bool handle_simd_exception(struct rec *rec, unsigned long esr)
 	return true;
 }
 
-static void advance_pc(void)
+void advance_pc(void)
 {
 	unsigned long pc = read_elr_el2();
 
@@ -378,12 +379,77 @@ static inline bool rsi_handler_needs_fpu(unsigned int id)
 }
 
 /*
+ * Resolve self VM index from the current realm policy in RD->pd.
+ * Returns true on success.
+ */
+static bool get_self_vm_index_from_current_cfg(struct rec *rec, uint16_t *out_self_idx)
+{
+	struct rd *rd;
+	unsigned long pd_addr;
+	struct parsed_payload cfg;
+
+	if ((rec == NULL) || (out_self_idx == NULL)) {
+		return false;
+	}
+
+	granule_lock(rec->realm_info.g_rd, GRANULE_STATE_RD);
+	rd = buffer_granule_map(rec->realm_info.g_rd, SLOT_RD);
+	if (rd == NULL) {
+		granule_unlock(rec->realm_info.g_rd);
+		return false;
+	}
+
+	pd_addr = rd->pd;
+	buffer_unmap(rd);
+	granule_unlock(rec->realm_info.g_rd);
+
+	if (!load_cfg(pd_addr, &cfg, GRANULE_STATE_DELEGATED, SLOT_RSI_CALL)) {
+		return false;
+	}
+
+	if (cfg.self_vm_index >= cfg.num_vms) {
+		return false;
+	}
+
+	*out_self_idx = cfg.self_vm_index;
+	return true;
+}
+
+/*
+ * Check transition policy for CALL on SMC exception class.
+ * Returns true if this SMC should be blocked.
+ */
+static bool should_block_smc_by_transition_policy(struct rec *rec)
+{
+	uint16_t self_idx;
+	uint16_t policy = 0U;
+	int trc;
+	const uint32_t smc_ec_range = EXTRACT(ESR_EL2_EC, ESR_EL2_EC_SMC); /* 23 */
+
+	if (!get_self_vm_index_from_current_cfg(rec, &self_idx)) {
+		return false;
+	}
+
+	trc = transition_table_get_policy(self_idx, CF_TYPE_CALL,
+					  smc_ec_range, &policy);
+	if ((trc == 1) && (policy == CF_POLICY_BLOCK)) {
+		INFO("exit: blocked SMC by transition policy (owner=%u type=%u range=%u policy=%u)\n",
+		     (unsigned)self_idx, (unsigned)CF_TYPE_CALL,
+		     (unsigned)smc_ec_range, (unsigned)policy);
+		return true;
+	}
+
+	return false;
+}
+
+/*
  * Return 'true' if execution should continue in the REC, otherwise return
  * 'false' to go back to the NS caller of REC.Enter.
  */
 static bool handle_realm_rsi(struct rec *rec, struct rmi_rec_exit *rec_exit)
 {
-	struct rsi_result res = { 0 };
+	struct rsi_result res = {UPDATE_REC_RETURN_TO_REALM, 0UL,
+				{{[0 ... SMC_RESULT_REGS-1] = 0UL}}};
 	unsigned int function_id = (unsigned int)rec->regs[0];
 	bool restore_simd_ctx = false;
 	unsigned int i;
@@ -421,11 +487,20 @@ static bool handle_realm_rsi(struct rec *rec, struct rmi_rec_exit *rec_exit)
 	case SMC_RSI_FEATURES:
 		handle_rsi_features(rec, &res);
 		break;
+	case SMC_RSI_UPLOAD_POLICY:
+		handle_rsi_upload_policy(rec, &res);
+		break;
 	case SMC_RSI_ATTEST_TOKEN_INIT:
 		handle_rsi_attest_token_init(rec, &res);
 		break;
 	case SMC_RSI_ATTEST_TOKEN_CONTINUE:
 		handle_rsi_attest_token_continue(rec, rec_exit, &res);
+		break;
+	case SMC_RSI_ATTEST_TOKEN_INIT_GROUP:
+		handle_rsi_attest_token_init_group(rec, &res);
+		break;
+	case SMC_RSI_ATTEST_TOKEN_CONTINUE_GROUP:
+		handle_rsi_attest_token_continue_group(rec, rec_exit, &res);
 		break;
 	case SMC_RSI_MEASUREMENT_READ:
 		handle_rsi_measurement_read(rec, &res);
@@ -490,10 +565,15 @@ static bool handle_exception_sync(struct rec *rec, struct rmi_rec_exit *rec_exit
 		realm_inject_undef_abort();
 		return true;
 	case ESR_EL2_EC_SMC:
+		if (should_block_smc_by_transition_policy(rec)) {
+			/* Block this SMC/RSI and immediately return to Realm. */
+			rec->regs[0] = RSI_ERROR_STATE;
+			advance_pc();
+			return true;
+		}
 		return handle_realm_rsi(rec, rec_exit);
 	case ESR_EL2_EC_SYSREG: {
 		bool ret = handle_sysreg_access_trap(rec, rec_exit, esr);
-
 		advance_pc();
 		return ret;
 	}
@@ -570,13 +650,15 @@ static bool handle_exception_serror_lel(struct rec *rec, struct rmi_rec_exit *re
 		rec_exit->esr = esr & ESR_SERROR_MASK;
 		break;
 	case ESR_EL2_SERROR_AET_UC:	/* Uncontainable RAS Error */
-		system_abort();
-		break;
+		/*
+		 * Fall through.
+		 */
 	default:
 		/*
 		 * Unrecognized Asynchronous Error Type
 		 */
-		assert(false);
+		system_abort();
+		break;
 	}
 
 	return false;

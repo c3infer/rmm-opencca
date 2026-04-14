@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc libt_cose.a CMakeFiles/t_cose.dir/__/__/ext/t_cose/crypto_adapters/t_cose_psa_crypto.c.obj CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_parameters.c.obj CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_sign_sign.c.obj CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_signature_sign_restart.c.obj CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_util.c.obj CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_key.c.obj
+/usr/bin/aarch64-linux-gnu-ranlib libt_cose.a

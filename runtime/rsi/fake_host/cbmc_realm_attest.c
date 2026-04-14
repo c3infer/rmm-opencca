@@ -23,6 +23,18 @@ void handle_rsi_attest_token_continue(struct rec *rec,
 	ASSERT(false, "handle_rsi_attest_token_continue");
 }
 
+void handle_rsi_attest_token_init_group(struct rec *rec, struct rsi_result *res)
+{
+	ASSERT(false, "handle_rsi_attest_token_init_group");
+}
+
+void handle_rsi_attest_token_continue_group(struct rec *rec,
+				      struct rmi_rec_exit *rec_exit,
+				      struct rsi_result *res)
+{
+	ASSERT(false, "handle_rsi_attest_token_continue_group");
+}
+
 void handle_rsi_measurement_read(struct rec *rec, struct rsi_result *res)
 {
 	ASSERT(false, "handle_rsi_measurement_read");

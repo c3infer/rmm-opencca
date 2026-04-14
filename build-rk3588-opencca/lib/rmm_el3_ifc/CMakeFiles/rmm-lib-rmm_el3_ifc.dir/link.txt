@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-rmm_el3_ifc.a "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_ifc.c.obj" "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_ifc_manifest.c.obj" "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/rmm_el3_runtime.c.obj" "CMakeFiles/rmm-lib-rmm_el3_ifc.dir/src/aarch64/rmm_el3_ifc_helpers.S.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-rmm_el3_ifc.a

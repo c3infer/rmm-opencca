@@ -1,0 +1,2 @@
+/usr/bin/ar qc librmm-lib-slot_buf.a "CMakeFiles/rmm-lib-slot_buf.dir/src/buffer.c.o"
+/usr/bin/ranlib librmm-lib-slot_buf.a

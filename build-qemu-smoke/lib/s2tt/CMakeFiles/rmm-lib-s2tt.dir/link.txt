@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-s2tt.a "CMakeFiles/rmm-lib-s2tt.dir/src/s2tt.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-s2tt.a

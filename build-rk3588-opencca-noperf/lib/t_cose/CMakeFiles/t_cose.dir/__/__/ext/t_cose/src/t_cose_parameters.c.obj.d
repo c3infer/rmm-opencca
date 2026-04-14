@@ -1,0 +1,23 @@
+lib/t_cose/CMakeFiles/t_cose.dir/__/__/ext/t_cose/src/t_cose_parameters.c.obj: \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/src/t_cose_parameters.c \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_spiffy_decode.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_decode.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_common.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_private.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stdint-gcc.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/UsefulBuf.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/string.h \
+ /usr/lib/gcc-cross/aarch64-linux-gnu/13/include/stddef.h \
+ /home/amir/mica/staging/rmm-private-opencca/lib/libc/include/stdbool.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/inc/t_cose/t_cose_parameters.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_encode.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_decode.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/inc/t_cose/q_useful_buf.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/UsefulBuf.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/inc/t_cose/t_cose_common.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/inc/t_cose/t_cose_standard_constants.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/inc/t_cose/t_cose_key.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/t_cose/src/t_cose_util.h \
+ /home/amir/mica/staging/rmm-private-opencca/ext/qcbor/inc/qcbor/qcbor_encode.h

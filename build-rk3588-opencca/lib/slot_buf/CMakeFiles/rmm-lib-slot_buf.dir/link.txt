@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc librmm-lib-slot_buf.a "CMakeFiles/rmm-lib-slot_buf.dir/src/aarch64/ns_access.S.obj" "CMakeFiles/rmm-lib-slot_buf.dir/src/buffer.c.obj"
+/usr/bin/aarch64-linux-gnu-ranlib librmm-lib-slot_buf.a

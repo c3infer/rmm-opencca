@@ -169,6 +169,17 @@ opencca_handle_esr_tvm_sysreg_trap(struct rec* rec,
     unsigned long sysreg = esr & ESR_EL2_SYSREG_MASK;
     unsigned int rt = (unsigned int)ESR_EL2_SYSREG_ISS_RT(esr);
     bool was_cache_enabled = has_cache_enabled(rec);
+    unsigned int op0, op1, crn, crm, op2;
+
+    op0 = (unsigned int)EXTRACT(ESR_EL2_SYSREG_TRAP_OP0, sysreg);
+    op1 = (unsigned int)EXTRACT(ESR_EL2_SYSREG_TRAP_OP1, sysreg);
+    crn = (unsigned int)EXTRACT(ESR_EL2_SYSREG_TRAP_CRN, sysreg);
+    crm = (unsigned int)EXTRACT(ESR_EL2_SYSREG_TRAP_CRM, sysreg);
+    op2 = (unsigned int)EXTRACT(ESR_EL2_SYSREG_TRAP_OP2, sysreg);
+
+    INFO("OPENCCA TVM trap: %s S%u_%u_C%u_C%u_%u (sysreg=0x%lx, rt=%u)\n",
+         ESR_EL2_SYSREG_IS_WRITE(esr) ? "write" : "read",
+         op0, op1, crn, crm, op2, sysreg, rt);
     
     if (ESR_EL2_SYSREG_IS_WRITE(esr)) {
         write_sysreg_by_esr(sysreg, rec->regs[rt], rec);

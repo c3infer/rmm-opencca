@@ -17,6 +17,7 @@
 #include <status.h>
 #include <utils_def.h>
 #include <xlat_high_va.h>
+#include <rmi_rsi_count.h>
 
 /* Maximum number of supported arguments */
 #define MAX_NUM_ARGS		5U
@@ -31,10 +32,32 @@ static const char * const rmi_status_string[] = {
 	RMI_STATUS_STRING(ERROR_INPUT),
 	RMI_STATUS_STRING(ERROR_REALM),
 	RMI_STATUS_STRING(ERROR_REC),
-	RMI_STATUS_STRING(ERROR_RTT)
+	RMI_STATUS_STRING(ERROR_RTT),
+	RMI_STATUS_STRING(ERROR_DEVICE),
+	RMI_STATUS_STRING(ERROR_NOT_SUPPORTED),
+	RMI_STATUS_STRING(ERROR_RTT_AUX)
 };
 
-COMPILER_ASSERT(ARRAY_SIZE(rmi_status_string) == RMI_ERROR_COUNT);
+COMPILER_ASSERT(ARRAY_SIZE(rmi_status_string) == RMI_ERROR_COUNT_MAX);
+
+static unsigned long ticks_to_us(unsigned long ticks, unsigned long freq)
+{
+	unsigned long secs;
+	unsigned long rem;
+
+	if (freq == 0UL) {
+		return 0UL;
+	}
+
+	/*
+	 * 64-bit only conversion:
+	 * us = (ticks / freq) * 1e6 + ((ticks % freq) * 1e6) / freq
+	 */
+	secs = ticks / freq;
+	rem = ticks % freq;
+
+	return (secs * 1000000UL) + ((rem * 1000000UL) / freq);
+}
 
 /*
  * At this level (in handle_ns_smc) we distinguish the RMI calls only on:
@@ -131,28 +154,64 @@ struct smc_handler {
  */
 static const struct smc_handler smc_handlers[] = {
 	HANDLER(VERSION,		1, 2, smc_version,		 true,  true),
-	HANDLER(FEATURES,		1, 1, smc_read_feature_register, true,  true),
 	HANDLER(GRANULE_DELEGATE,	1, 0, smc_granule_delegate,	 false, true),
 	HANDLER(GRANULE_UNDELEGATE,	1, 0, smc_granule_undelegate,	 false, true),
-	HANDLER(REALM_CREATE,		2, 0, smc_realm_create,		 true,  true),
-	HANDLER(REALM_DESTROY,		1, 0, smc_realm_destroy,	 true,  true),
+	HANDLER(DATA_CREATE,		5, 0, smc_data_create,		 false, false),
+	HANDLER(DATA_CREATE_UNKNOWN,	3, 0, smc_data_create_unknown,	 false, false),
+	HANDLER(DATA_DESTROY,		2, 2, smc_data_destroy,		 false, false),
+	HANDLER(PDEV_AUX_COUNT,		0, 0, NULL,			 true, true),
 	HANDLER(REALM_ACTIVATE,		1, 0, smc_realm_activate,	 true,  true),
+	HANDLER(REALM_CREATE,		2, 0, smc_realm_create,		 true,  true),
+	HANDLER(REALM_PD, 			2, 0, smc_realm_pd, 		 true, true),
+	HANDLER(REALM_DUMMY_PAGE,	2, 0, smc_realm_dummy_page,	 true, true),
+	HANDLER(REALM_DESTROY,		1, 0, smc_realm_destroy,	 true,  true),
 	HANDLER(REC_CREATE,		3, 0, smc_rec_create,		 true,  true),
 	HANDLER(REC_DESTROY,		1, 0, smc_rec_destroy,		 true,  true),
 	HANDLER(REC_ENTER,		2, 0, smc_rec_enter,		 false, true),
-	HANDLER(DATA_CREATE,		5, 0, smc_data_create,		 false, false),
-	HANDLER(DATA_CREATE_UNKNOWN,	3, 0, smc_data_create_unknown,	 false, false),
-	HANDLER(DATA_DESTROY,		2, 2, smc_data_destroy,		 false, true),
 	HANDLER(RTT_CREATE,		4, 0, smc_rtt_create,		 false, true),
-	HANDLER(RTT_DESTROY,		3, 2, smc_rtt_destroy,		 false, true),
-	HANDLER(RTT_FOLD,		3, 1, smc_rtt_fold,		 false, false),
+	HANDLER(RTT_DESTROY,		3, 2, smc_rtt_destroy,		 true, true),
 	HANDLER(RTT_MAP_UNPROTECTED,	4, 0, smc_rtt_map_unprotected,	 false, false),
+	HANDLER(VDEV_AUX_COUNT,		0, 0, NULL,			 true, true),
+	HANDLER(RTT_READ_ENTRY,		3, 4, smc_rtt_read_entry,	 true, true),
 	HANDLER(RTT_UNMAP_UNPROTECTED,	3, 1, smc_rtt_unmap_unprotected, false, false),
-	HANDLER(RTT_READ_ENTRY,		3, 4, smc_rtt_read_entry,	 false, true),
 	HANDLER(PSCI_COMPLETE,		3, 0, smc_psci_complete,	 true,  true),
+	HANDLER(FEATURES,		1, 1, smc_read_feature_register, true,  true),
+	HANDLER(RTT_FOLD,		3, 1, smc_rtt_fold,		 false, false),
 	HANDLER(REC_AUX_COUNT,		1, 1, smc_rec_aux_count,	 true,  true),
 	HANDLER(RTT_INIT_RIPAS,		3, 1, smc_rtt_init_ripas,	 false, true),
-	HANDLER(RTT_SET_RIPAS,		4, 1, smc_rtt_set_ripas,	 false, true)
+	HANDLER(RTT_SET_RIPAS,		4, 1, smc_rtt_set_ripas,	 false, true),
+	HANDLER(DEV_MEM_MAP,		4, 0, smc_dev_mem_map,		 true, true),
+	HANDLER(DEV_MEM_UNMAP,		3, 2, smc_dev_mem_unmap,	 true, true),
+	HANDLER(DATA_CREATE_UNKNOWN_SHARED,     3, 0, smc_data_create_unknown_shared,     true,  true),
+	HANDLER(SET_PROTECTED_SHARED_RANGE, 	3, 0, smc_realm_set_protected_shared_range, 	  true,  true),
+	HANDLER(BIND_PROTECTED_SHARED,	3, 0, smc_realm_bind_protected_shared,	 true,  true),
+	HANDLER(SGT, 			1, 0, smc_sgt, 		 true, true),
+	HANDLER(PDEV_ABORT,		0, 0, NULL,			 true, true),
+	HANDLER(PDEV_COMMUNICATE,	2, 0, NULL,			 true, true),
+	HANDLER(PDEV_CREATE,		2, 0, NULL,			 true, true),
+	HANDLER(PDEV_DESTROY,		0, 0, NULL,			 true, true),
+	HANDLER(PDEV_GET_STATE,		1, 1, NULL,			 true, true),
+	HANDLER(PDEV_IDE_RESET,		0, 0, NULL,			 true, true),
+	HANDLER(PDEV_NOTIFY,		0, 0, NULL,			 true, true),
+	HANDLER(PDEV_SET_PUBKEY,	4, 0, NULL,			 true, true),
+	HANDLER(PDEV_STOP,		0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_CREATE,		0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_DESTROY,	0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_FOLD,		0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_MAP_PROTECTED,	0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_MAP_UNPROTECTED, 0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_UNMAP_PROTECTED, 0, 0, NULL,			 true, true),
+	HANDLER(RTT_AUX_UNMAP_UNPROTECTED, 0, 0, NULL,			 true, true),
+	HANDLER(VDEV_ABORT,		0, 0, NULL,			 true, true),
+	HANDLER(VDEV_COMMUNICATE,	0, 0, NULL,			 true, true),
+	HANDLER(VDEV_CREATE,		0, 0, NULL,			 true, true),
+	HANDLER(VDEV_DESTROY,		0, 0, NULL,			 true, true),
+	HANDLER(VDEV_GET_STATE,		0, 0, NULL,			 true, true),
+	HANDLER(VDEV_STOP,		0, 0, NULL,			 true, true),
+	HANDLER(RTT_SET_S2AP,		0, 0, NULL,			 true, true),
+	HANDLER(MEC_SET_SHARED,		0, 0, NULL,			 true, true),
+	HANDLER(MEC_SET_PRIVATE,	0, 0, NULL,			 true, true),
+	HANDLER(VDEV_COMPLETE,		0, 0, NULL,			 true, true)
 };
 
 COMPILER_ASSERT(ARRAY_SIZE(smc_handlers) == SMC64_NUM_FIDS_IN_RANGE(RMI));
@@ -176,6 +235,9 @@ static void rmi_log_on_exit(unsigned int handler_id,
 {
 	const struct smc_handler *handler = &smc_handlers[handler_id];
 	unsigned int function_id = SMC64_RMI_FID(handler_id);
+	unsigned long cntpct = read_cntpct_el0();
+	unsigned long cntfrq = read_cntfrq_el0();
+	unsigned long ts_us = 0UL;
 	return_code_t rc;
 
 	if (!handler->log_exec && !handler->log_error) {
@@ -188,8 +250,10 @@ static void rmi_log_on_exit(unsigned int handler_id,
 	    (handler->log_error && (rc.status != RMI_SUCCESS))) {
 		unsigned int num;
 
-		/* Print function name */
-		INFO("SMC_RMI_%-21s", handler->fn_name);
+		ts_us = ticks_to_us(cntpct, cntfrq);
+
+		/* Monotonic microseconds derived from EL2-accessible system counter. */
+		INFO("[ts_us=%lu] SMC_RMI_%-21s", ts_us, handler->fn_name);
 
 		/* Print arguments */
 		num = (unsigned int)handler->type & 0xFFU;
@@ -200,7 +264,7 @@ static void rmi_log_on_exit(unsigned int handler_id,
 		}
 
 		/* Print status */
-		if (rc.status >= RMI_ERROR_COUNT) {
+		if (rc.status >= RMI_ERROR_COUNT_MAX) {
 			INFO(" > %lx", res->x[0]);
 		} else {
 			INFO(" > RMI_%s", rmi_status_string[rc.status]);
@@ -346,6 +410,7 @@ void handle_ns_smc(unsigned int function_id,
 	/* Current CPU's SIMD state must not be saved when exiting RMM */
 	assert(simd_is_state_saved() == false);
 	assert(check_cpu_slots_empty());
+	rmi_plus_one();
 }
 
 /*

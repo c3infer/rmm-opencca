@@ -9,7 +9,6 @@
 #include <rsi-handler.h>
 #include <rsi-host-call.h>
 #include <smc-rsi.h>
-#include <status.h>
 #include <string.h>
 
 /*
@@ -109,8 +108,36 @@ void handle_rsi_host_call(struct rec *rec, struct rmi_rec_exit *rec_exit,
 			  struct rsi_result *res)
 {
 	unsigned long ipa = rec->regs[1];
+	struct rd *rd;
 
 	res->action = UPDATE_REC_RETURN_TO_REALM;
+
+    granule_lock(rec->realm_info.g_rd, GRANULE_STATE_RD);
+    rd = buffer_granule_map(rec->realm_info.g_rd, SLOT_RD);
+    if (rd == NULL) {
+        INFO("RD is NULL\n");
+        granule_unlock(rec->realm_info.g_rd);
+        res->smc_res.x[0] = RSI_ERROR_INPUT;
+        return;
+    }
+	// unsigned long pd_addr;
+	// pd_addr = rd->pd;
+	// struct parsed_payload cfg;
+	// load_cfg(pd_addr, &cfg);
+
+    // if (config_is_nonempty(&cfg) && policy_has_rsi_block_channel(&cfg)) {
+    //     INFO("RSIs are BLOCKED!\n");
+	// 	buffer_unmap(rd);
+    //     granule_unlock(rec->realm_info.g_rd);
+    //     res->smc_res.x[0] = RSI_ERROR_INPUT;
+    //     return;
+    // } else {
+	// 	if (config_is_nonempty(&cfg) && policy_has_rsi_scrub_channel(&cfg)) {
+	// 		INFO("RSIs are SCRUBBED!\n");
+	// 	}
+	// }
+	buffer_unmap(rd);
+    granule_unlock(rec->realm_info.g_rd);
 
 	if (!ALIGNED(ipa, sizeof(struct rsi_host_call))) {
 		res->smc_res.x[0] = RSI_ERROR_INPUT;
@@ -134,7 +161,8 @@ void handle_rsi_host_call(struct rec *rec, struct rmi_rec_exit *rec_exit,
 struct rsi_walk_result complete_rsi_host_call(struct rec *rec,
 					      struct rmi_rec_enter *rec_enter)
 {
-	struct rsi_result res = { (enum rsi_action)0U };
+	struct rsi_result res = {UPDATE_REC_RETURN_TO_REALM, 0UL,
+				{{[0 ... SMC_RESULT_REGS-1] = 0UL}}};
 	struct rsi_walk_result walk_res = { false, 0UL };
 
 	/*
